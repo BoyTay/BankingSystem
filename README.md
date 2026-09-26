@@ -12,20 +12,25 @@ thuộc 3 nhóm: Creational, Structural, và Behavioral.
 - **Java**: 17+ (đã test trên OpenJDK 25)
 - **Build tool**: Maven 3.9+ (hoặc dùng Maven Wrapper `mvnw` đi kèm)
 
-## 🚀 Cách chạy
+## 🚀 Cách chạy ứng dụng
 
-```bash
-# Biên dịch
-.\mvnw.cmd compile
+### Cách 1: Giao diện Đồ họa Desktop (JavaFX Modern UI) [Khuyên dùng]
+Chạy trực tiếp file script:
+- Nhấp đúp chuột vào `run-gui.bat` (hoặc `run.bat` rồi chọn 1).
 
-# Chạy ứng dụng console
-.\mvnw.cmd exec:java -D"exec.mainClass=com.banking.Main"
+Hoặc dùng lệnh terminal:
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
+.\mvnw.cmd javafx:run
 ```
 
-Hoặc nếu đã cài Maven trong PATH:
-```bash
-mvn compile
-mvn exec:java -Dexec.mainClass="com.banking.Main"
+### Cách 2: Giao diện Console Terminal (CLI)
+- Nhấp đúp chuột vào `run.bat` rồi chọn 2.
+
+Hoặc dùng lệnh terminal:
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
+.\mvnw.cmd exec:java -D"exec.mainClass=com.banking.Main"
 ```
 
 ---
@@ -83,8 +88,55 @@ src/main/java/com/banking/
 │   ├── AccountService.java
 │   ├── TransactionService.java
 │   └── NotificationService.java
-└── Main.java                     ← Console menu
+├── ui/                           ← Giao diện đồ họa JavaFX (Modern Navy Theme)
+│   ├── GuiLauncher.java          ← Launcher trung gian tương thích Java 17+
+│   ├── MainApp.java              ← JavaFX Application entry point
+│   ├── MainLayout.java           ← Sidebar Navy (#0A2342) + Content Switcher
+│   ├── DashboardView.java        ← Tổng quan số dư thẻ & Lịch sử GD (Singleton, Observer)
+│   ├── AccountView.java          ← Mở & Quản lý TK, Khóa/Mở (Builder, Strategy, State)
+│   ├── DepositWithdrawView.java  ← Nạp & Rút tiền (State check, Observer, Strategy)
+│   ├── TransferView.java         ← Chuyển khoản & Mẫu định kỳ (Facade, Command, Prototype)
+│   ├── HistoryView.java          ← Lịch sử GD & Hoàn tác (Command undo stack)
+│   ├── ProxyDemoView.java        ← Kiểm soát truy cập phân quyền RBAC (Protection Proxy)
+│   ├── UIContext.java            ← Quản lý trạng thái & dữ liệu quan sát được (Observable)
+│   └── UiUtils.java              ← Trợ giúp định dạng VND, huy hiệu Pattern & Hộp thoại
+└── Main.java                     ← Console menu CLI truyền thống
 ```
+
+---
+
+## 🖥️ Các màn hình giao diện đồ họa (JavaFX)
+
+1. **Dashboard (Tổng quan)**:
+   - Thẻ hiển thị số dư tài khoản trực quan với hiệu ứng đổ bóng, huy hiệu gói tài khoản.
+   - Bảng giao dịch gần đây được cập nhật thời gian thực.
+   - Hộp nhật ký Observer (SMS, Email, UI feed) bắt kịp thời mọi biến động.
+   - Minh họa: `Singleton`, `Observer`.
+
+2. **Mở & Quản lý tài khoản**:
+   - Biểu mẫu mở tài khoản tích hợp **Visual Code Inspector** hiển thị cú pháp Builder Pattern thực thi.
+   - Bảng quản lý cho phép thao tác Khóa (Lock) / Mở khóa (Unlock) tức thì.
+   - Minh họa: `Builder`, `Strategy`, `State`.
+
+3. **Nạp & Rút tiền**:
+   - Nạp tiền tự động kích hoạt thông báo qua đa kênh.
+   - Rút tiền kiểm tra điều kiện trạng thái (`LockedState` sẽ lập tức chặn giao dịch và thông báo lỗi).
+   - Minh họa: `State`, `Strategy`, `Observer`, `Facade`.
+
+4. **Chuyển khoản & Mẫu giao dịch**:
+   - Chuyển khoản liên tài khoản với tính phí tự động.
+   - Khu vực Prototype Pattern cho phép lưu mẫu (`TransferTemplate`) và nhân bản độc lập (`clone()`).
+   - Minh họa: `Facade`, `Command`, `Prototype`, `Strategy`.
+
+5. **Lịch sử giao dịch & Hoàn tác**:
+   - Bộ lọc giao dịch theo số tài khoản.
+   - Nút **Hoàn tác (Undo)** lệnh chuyển khoản gần nhất nhờ ngăn xếp `TransactionHistory`.
+   - Minh họa: `Command`.
+
+6. **Phân quyền truy cập (Proxy Demo)**:
+   - Thử nghiệm các vai trò: `ADMIN`, `USER`, `READONLY`.
+   - Khi chọn `READONLY` và cố nạp/rút tiền, `AccountProxy` sẽ chủ động ném `SecurityException` và hiển thị cảnh báo bảo mật.
+   - Minh họa: `Protection Proxy (RBAC)`.
 
 ---
 

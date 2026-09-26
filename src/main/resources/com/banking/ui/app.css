@@ -1,0 +1,443 @@
+/* ==========================================================================
+   VietBank Desktop — Modern Design System
+   Theme: Deep Navy (#0A2342) + Gold Accent (#C9A84C) + Clean Cards
+   ========================================================================== */
+
+.root {
+    -fx-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    -fx-background-color: #F4F6F9;
+    -fx-text-fill: #1C2536;
+    -fx-font-size: 13px;
+}
+
+/* ── Sidebar Styles ─────────────────────────────────────────── */
+.sidebar {
+    -fx-background-color: #0A2342;
+    -fx-pref-width: 250px;
+    -fx-min-width: 250px;
+    -fx-padding: 20px 14px;
+}
+
+.brand-box {
+    -fx-padding: 0 0 24px 8px;
+    -fx-alignment: center-left;
+}
+
+.brand-logo {
+    -fx-background-color: #C9A84C;
+    -fx-background-radius: 10px;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0A2342;
+}
+
+.brand-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+}
+
+.brand-subtitle {
+    -fx-font-size: 11px;
+    -fx-text-fill: #8E9BAE;
+    -fx-padding: 2px 0 0 0;
+}
+
+.nav-section-title {
+    -fx-text-fill: #607289;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 14px 12px 6px 12px;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #A0B2C6;
+    -fx-font-size: 13px;
+    -fx-font-weight: normal;
+    -fx-alignment: center-left;
+    -fx-padding: 10px 14px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.nav-button:hover {
+    -fx-background-color: #14335A;
+    -fx-text-fill: #FFFFFF;
+}
+
+.nav-button-active {
+    -fx-background-color: #163C6B;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent transparent transparent #C9A84C;
+    -fx-border-width: 0 0 0 4px;
+    -fx-border-radius: 0;
+}
+
+.sidebar-footer {
+    -fx-padding: 14px 10px 0 10px;
+    -fx-background-color: #06172E;
+    -fx-background-radius: 10px;
+}
+
+.sidebar-status-text {
+    -fx-text-fill: #8E9BAE;
+    -fx-font-size: 11px;
+}
+
+/* ── Content Header ─────────────────────────────────────────── */
+.top-header {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 16px 28px;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 0 0 1px 0;
+    -fx-alignment: center-left;
+}
+
+.page-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0F172A;
+}
+
+.page-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #64748B;
+}
+
+.main-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-fit-to-width: true;
+}
+
+.content-pane {
+    -fx-padding: 24px 28px 40px 28px;
+    -fx-spacing: 20px;
+}
+
+/* ── Card Styling ───────────────────────────────────────────── */
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12px;
+    -fx-border-color: #E8ECEF;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.04), 10, 0, 0, 3);
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0F172A;
+}
+
+.card-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748B;
+}
+
+/* ── Bank Account Card ──────────────────────────────────────── */
+.account-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12px;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+    -fx-padding: 18px;
+    -fx-min-width: 260px;
+    -fx-pref-width: 270px;
+    -fx-effect: dropshadow(gaussian, rgba(10, 35, 66, 0.06), 8, 0, 0, 2);
+}
+
+.account-card-premium {
+    -fx-border-color: #F1D282;
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #FFFDF8);
+}
+
+.account-card-locked {
+    -fx-border-color: #FCA5A5;
+    -fx-background-color: #FFF5F5;
+}
+
+.account-number {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0A2342;
+    -fx-font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.account-owner {
+    -fx-font-size: 12px;
+    -fx-text-fill: #475569;
+}
+
+.account-balance-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+
+.account-balance {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0F172A;
+}
+
+/* ── Pattern Badges ─────────────────────────────────────────── */
+.badge-pattern {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-padding: 3px 8px;
+}
+
+.badge-creational {
+    -fx-background-color: #FEF3C7;
+    -fx-text-fill: #92400E;
+}
+
+.badge-structural {
+    -fx-background-color: #E0E7FF;
+    -fx-text-fill: #3730A3;
+}
+
+.badge-behavioral {
+    -fx-background-color: #DCFCE7;
+    -fx-text-fill: #166534;
+}
+
+.badge-status-active {
+    -fx-background-color: #DCFCE7;
+    -fx-text-fill: #15803D;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 2px 8px;
+}
+
+.badge-status-locked {
+    -fx-background-color: #FEE2E2;
+    -fx-text-fill: #B91C1C;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12px;
+    -fx-padding: 2px 8px;
+}
+
+.badge-type-standard {
+    -fx-background-color: #F1F5F9;
+    -fx-text-fill: #475569;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-padding: 2px 6px;
+}
+
+.badge-type-premium {
+    -fx-background-color: #FEF3C7;
+    -fx-text-fill: #B45309;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-padding: 2px 6px;
+}
+
+.badge-type-savings {
+    -fx-background-color: #E0F2FE;
+    -fx-text-fill: #0369A1;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-padding: 2px 6px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+    -fx-background-color: #C9A84C;
+    -fx-text-fill: #0A2342;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #B89338;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #9E7B2B;
+}
+
+.btn-navy {
+    -fx-background-color: #0A2342;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.btn-navy:hover {
+    -fx-background-color: #143666;
+}
+
+.btn-secondary {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #334155;
+    -fx-border-color: #CBD5E1;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 9px 18px;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #94A3B8;
+}
+
+.btn-danger {
+    -fx-background-color: #EF4444;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 18px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.btn-danger:hover {
+    -fx-background-color: #DC2626;
+}
+
+.btn-quick-action {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 14px 16px;
+    -fx-pref-width: 140px;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+}
+
+.btn-quick-action:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #C9A84C;
+}
+
+/* ── Form Controls ──────────────────────────────────────────── */
+.form-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+}
+
+.text-field, .combo-box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #0F172A;
+}
+
+.text-field:focused, .combo-box:focused {
+    -fx-border-color: #0A2342;
+    -fx-effect: dropshadow(gaussian, rgba(10, 35, 66, 0.15), 4, 0, 0, 0);
+}
+
+.combo-box .list-cell {
+    -fx-padding: 6px 10px;
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+.table-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-padding: 10px 8px;
+}
+
+.table-view .column-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #475569;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #F1F5F9;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 4px 0;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #FAFAFB;
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: #F1F5F9;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: #E0E7FF;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #1E293B;
+    -fx-font-size: 12px;
+    -fx-alignment: center-left;
+}
+
+/* ── Notification / Log Feed ────────────────────────────────── */
+.log-box {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px;
+}
+
+.log-entry {
+    -fx-font-family: 'Consolas', 'Courier New', monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #E2E8F0;
+    -fx-padding: 3px 0;
+}
+
+.info-banner {
+    -fx-background-color: #EFF6FF;
+    -fx-border-color: #BFDBFE;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 16px;
+}
+
+.info-banner-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #1E40AF;
+}
