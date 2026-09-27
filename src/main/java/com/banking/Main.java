@@ -10,11 +10,13 @@ import com.banking.pattern.structural.AccountProxy;
 import com.banking.pattern.structural.BankingFacade;
 import com.banking.pattern.structural.RealAccount;
 import com.banking.service.AccountService;
+import com.banking.service.AuthService;
 import com.banking.service.NotificationService;
 import com.banking.service.TransactionService;
 
 import java.util.List;
 import java.util.Scanner;
+import java.util.Arrays;
 
 /**
  * Hệ thống Ngân hàng / Ví điện tử — Console Menu.
@@ -40,6 +42,9 @@ public class Main {
     // ═══════════════════════════════════════════════════════
 
     public static void main(String[] args) {
+        AuthService.User operator = login();
+        if (operator == null) return;
+        txHistory.restoreFromLedger(transactionService.getAllTransactions(), accountService);
         System.out.println("╔══════════════════════════════════════════════════════╗");
         System.out.println("║   🏦  HỆ THỐNG NGÂN HÀNG — DESIGN PATTERNS DEMO    ║");
         System.out.println("║   9 Patterns: Builder, Singleton, Prototype,        ║");
@@ -53,8 +58,13 @@ public class Main {
 
         boolean running = true;
         while (running) {
-            printMenu();
+            printMenu(operator);
             String choice = scanner.nextLine().trim();
+
+            if (!allowed(operator.role(), choice)) {
+                System.out.println("  Vai trò hiện tại không được phép thực hiện thao tác này.");
+                continue;
+            }
 
             try {
                 switch (choice) {
@@ -68,6 +78,8 @@ public class Main {
                     case "8"  -> undoLastTransaction();
                     case "9"  -> proxyDemo();
                     case "10" -> listAccounts();
+                    case "11" -> createOperator();
+                    case "12" -> changePassword(operator.username());
                     case "0"  -> {
                         running = false;
                         System.out.println("\n👋 Cảm ơn đã sử dụng hệ thống. Tạm biệt!");
@@ -81,23 +93,99 @@ public class Main {
         scanner.close();
     }
 
+    private static AuthService.User login() {
+        AuthService auth = new AuthService();
+        if (auth.needsSetup()) {
+            System.out.println("Thiết lập quản trị viên đầu tiên.");
+            System.out.print("Tên đăng nhập: ");
+            String name = scanner.nextLine().trim();
+            char[] secret = readPassword();
+            try {
+                auth.createFirstAdmin(name, secret);
+                return auth.authenticate(name, secret);
+            } finally {
+                Arrays.fill(secret, '\0');
+            }
+        }
+        for (int attempt = 0; attempt < 3; attempt++) {
+            System.out.print("Tên đăng nhập: ");
+            String name = scanner.nextLine().trim();
+            char[] secret = readPassword();
+            try {
+                AuthService.User user = auth.authenticate(name, secret);
+                if (user != null) return user;
+            } finally {
+                Arrays.fill(secret, '\0');
+            }
+            System.out.println("Sai tài khoản hoặc mật khẩu.");
+        }
+        return null;
+    }
+
+    private static char[] readPassword() {
+        if (System.console() != null) return System.console().readPassword("Mật khẩu: ");
+        System.out.print("Mật khẩu: ");
+        return scanner.nextLine().toCharArray();
+    }
+
+    private static boolean allowed(AuthService.Role role, String choice) {
+        if ("0".equals(choice)) return true;
+        if (role == AuthService.Role.ADMIN) return true;
+        if (role == AuthService.Role.VIEWER) {
+            return "7".equals(choice) || "10".equals(choice) || "12".equals(choice);
+        }
+        return !"1".equals(choice) && !"6".equals(choice)
+                && !"9".equals(choice) && !"11".equals(choice);
+    }
+
     // ── Menu ────────────────────────────────────────────────
 
-    private static void printMenu() {
-        System.out.println("\n┌──────────────── MENU ────────────────┐");
-        System.out.println("│  1. Mở tài khoản       (Builder)     │");
-        System.out.println("│  2. Nạp tiền           (Observer)    │");
-        System.out.println("│  3. Rút tiền           (State)       │");
-        System.out.println("│  4. Chuyển khoản       (Facade+Cmd)  │");
-        System.out.println("│  5. Chuyển khoản mẫu   (Prototype)   │");
-        System.out.println("│  6. Khóa/Mở khóa TK   (State)       │");
-        System.out.println("│  7. Xem lịch sử GD                   │");
-        System.out.println("│  8. Hoàn tác GD cuối   (Command)     │");
-        System.out.println("│  9. Demo Proxy         (Proxy)       │");
-        System.out.println("│ 10. Danh sách tài khoản              │");
-        System.out.println("│  0. Thoát                            │");
-        System.out.println("└──────────────────────────────────────┘");
+    private static void printMenu(AuthService.User user) {
+        System.out.println("\n── MENU: " + user.username() + " (" + user.role() + ") ──");
+        if (user.role() == AuthService.Role.ADMIN) System.out.println("  1. Mở tài khoản (Builder)");
+        if (user.role() != AuthService.Role.VIEWER) {
+            System.out.println("  2. Nạp tiền (Observer)");
+            System.out.println("  3. Rút tiền (State)");
+            System.out.println("  4. Chuyển khoản (Facade + Command)");
+            System.out.println("  5. Chuyển khoản mẫu (Prototype)");
+        }
+        if (user.role() == AuthService.Role.ADMIN) System.out.println("  6. Khóa/Mở khóa tài khoản");
+        System.out.println("  7. Xem lịch sử giao dịch");
+        if (user.role() != AuthService.Role.VIEWER) System.out.println("  8. Hoàn tác chuyển khoản cuối");
+        if (user.role() == AuthService.Role.ADMIN) System.out.println("  9. Demo Proxy");
+        System.out.println(" 10. Danh sách tài khoản");
+        if (user.role() == AuthService.Role.ADMIN) System.out.println(" 11. Tạo người dùng");
+        System.out.println(" 12. Đổi mật khẩu");
+        System.out.println("  0. Thoát");
         System.out.print("Chọn: ");
+    }
+
+    private static void createOperator() {
+        System.out.print("Tên đăng nhập mới: ");
+        String username = scanner.nextLine().trim();
+        System.out.print("Vai trò (ADMIN/STAFF/VIEWER): ");
+        AuthService.Role role = AuthService.Role.valueOf(scanner.nextLine().trim().toUpperCase());
+        char[] secret = readPassword();
+        try {
+            new AuthService().createUser(username, secret, role);
+            System.out.println("Đã tạo người dùng " + username + ".");
+        } finally {
+            Arrays.fill(secret, '\0');
+        }
+    }
+
+    private static void changePassword(String username) {
+        System.out.println("Mật khẩu hiện tại:");
+        char[] oldSecret = readPassword();
+        System.out.println("Mật khẩu mới:");
+        char[] newSecret = readPassword();
+        try {
+            new AuthService().changePassword(username, oldSecret, newSecret);
+            System.out.println("Đã đổi mật khẩu.");
+        } finally {
+            Arrays.fill(oldSecret, '\0');
+            Arrays.fill(newSecret, '\0');
+        }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -291,7 +379,7 @@ public class Main {
         if (accNo == null) return;
 
         Account acc = accountService.findAccount(accNo);
-        RealAccount real = new RealAccount(acc);
+        RealAccount real = new RealAccount(acc, facade);
 
         // Demo ADMIN role
         System.out.println("\n  ── Test vai trò ADMIN ──");
