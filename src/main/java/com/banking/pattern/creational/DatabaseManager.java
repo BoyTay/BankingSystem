@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Singleton quản lý lưu trữ dữ liệu (in-memory fallback).
+ * Singleton quản lý dữ liệu trong RAM cho bản mô phỏng.
  * Chỉ tồn tại duy nhất một instance trong toàn bộ ứng dụng.
  */
 public class DatabaseManager {

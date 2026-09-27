@@ -9,8 +9,9 @@ thuộc 3 nhóm: Creational, Structural, và Behavioral.
 
 ## 📋 Yêu cầu hệ thống
 
-- **Java**: 17+ (đã test trên OpenJDK 25)
+- **Java**: 17+ (Maven và test đã chạy trên OpenJDK 25)
 - **Build tool**: Maven 3.9+ (hoặc dùng Maven Wrapper `mvnw` đi kèm)
+- Nếu `JAVA_HOME` chưa được đặt, các file `.bat` sẽ thử tìm JDK qua `javac` trong `PATH`.
 
 ## 🚀 Cách chạy ứng dụng
 
@@ -20,7 +21,7 @@ Chạy trực tiếp file script:
 
 Hoặc dùng lệnh terminal:
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
+$env:JAVA_HOME = "C:\duong-dan-den-jdk"
 .\mvnw.cmd javafx:run
 ```
 
@@ -29,7 +30,7 @@ $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
 
 Hoặc dùng lệnh terminal:
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
+$env:JAVA_HOME = "C:\duong-dan-den-jdk"
 .\mvnw.cmd exec:java -D"exec.mainClass=com.banking.Main"
 ```
 
@@ -43,11 +44,13 @@ $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
 | 2  | **Singleton** | Creational  | `DatabaseManager`                                 | Đảm bảo chỉ có một instance quản lý lưu trữ dữ liệu           |
 | 3  | **Prototype** | Creational  | `TransferTemplate`                                | Nhân bản mẫu giao dịch chuyển khoản để tái sử dụng             |
 | 4  | **Proxy**     | Structural  | `BankAccount`, `RealAccount`, `AccountProxy`      | Kiểm soát truy cập tài khoản dựa trên vai trò (RBAC)           |
-| 5  | **Facade**    | Structural  | `BankingFacade`                                   | Đơn giản hóa: debit + credit + log + notify trong một phương thức |
+| 5  | **Facade**    | Structural  | `BankingFacade`                                   | Một API cho nạp/rút/chuyển/hoàn tác; điều phối Command + Strategy + Observer |
 | 6  | **Command**   | Behavioral  | `Command`, `TransferCommand`, `TransactionHistory`| Thực thi & hoàn tác (undo) giao dịch chuyển khoản              |
 | 7  | **Observer**  | Behavioral  | `AccountObserver`, `SmsNotifier`, `EmailNotifier` | Thông báo SMS + Email khi có sự kiện trên tài khoản             |
 | 8  | **State**     | Behavioral  | `AccountState`, `ActiveState`, `LockedState`      | Thay đổi hành vi deposit/withdraw theo trạng thái tài khoản     |
-| 9  | **Strategy**  | Behavioral  | `FeeStrategy`, `StandardFee`, `PremiumFee`, `TieredFee` | Tính phí giao dịch khác nhau theo loại tài khoản          |
+| 9  | **Strategy**  | Behavioral  | `FeeStrategy`, `StandardFeeStrategy`, `PremiumFeeStrategy`, `TieredFeeStrategy` | Tính phí theo loại tài khoản |
+
+Sơ đồ lớp, sơ đồ tuần tự, lý do dùng từng pattern và giới hạn mô phỏng nằm trong [docs/DESIGN.md](docs/DESIGN.md).
 
 ---
 
@@ -166,7 +169,7 @@ src/main/java/com/banking/
 2. **Nạp tiền** vào cả 2 tài khoản → *Observer (SMS + Email)*
 3. **Chuyển khoản** từ A → B → *Facade + Command + Strategy*
 4. **Chuyển khoản mẫu** (Prototype) → clone template + execute
-5. **Hoàn tác** 2 lần → *Command undo*
+5. **Hoàn tác** giao dịch vừa chuyển → *Command undo*; lịch sử xuất hiện giao dịch hoàn tác liên kết mã giao dịch gốc. Nếu tài khoản nhận đã chi hết tiền, thao tác bị từ chối và lệnh vẫn nằm trong danh sách chờ undo.
 6. **Khóa tài khoản** A → *State (LockedState)*
 7. **Rút tiền** từ A (bị khóa) → in "Tài khoản bị khóa"
 8. **Mở khóa** A → *State (ActiveState)*
@@ -177,6 +180,9 @@ src/main/java/com/banking/
 
 ## 📝 Ghi chú
 
-- Persistence: In-memory (ArrayList/Map). SQLite driver có trong dependency nhưng dùng fallback in-memory.
-- Không sử dụng Spring, Lombok, hay framework nào ngoài Maven + sqlite-jdbc.
+- Dữ liệu chỉ lưu trong RAM qua `DatabaseManager` (Singleton), mất khi thoát ứng dụng. Đây là ứng dụng mô phỏng, không kết nối ngân hàng thật.
+- Tiền lưu ở lõi bằng `BigDecimal`, làm tròn đến 1 VND; giao diện cũ vẫn truyền/nhận `double` và lõi giới hạn giá trị đến 9.000.000.000.000.000 VND.
+- Proxy là màn hình minh họa phân quyền riêng; giao diện chính chưa có đăng nhập và vai trò người dùng.
+- Chạy kiểm thử: `./mvnw test` (Windows: `.\mvnw.cmd test`).
+- Không sử dụng Spring hay Lombok.
 - Mỗi file pattern đều có comment dòng 1: `// Pattern: [Tên] — [Mô tả]`
