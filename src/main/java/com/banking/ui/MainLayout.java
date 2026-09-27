@@ -1,6 +1,7 @@
 package com.banking.ui;
 
 import com.banking.pattern.creational.DatabaseManager;
+import com.banking.service.AuthService;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -30,18 +31,26 @@ public class MainLayout extends BorderPane {
     private TransferView transferView;
     private HistoryView historyView;
     private ProxyDemoView proxyDemoView;
+    private UserView userView;
+    private ProfileView profileView;
+    private final AuthService.User currentUser;
 
     private final Label lblSidebarDbInfo = new Label();
     private final Label lblSidebarUndoInfo = new Label();
 
-    public MainLayout() {
+    public MainLayout(AuthService auth, AuthService.User user) {
+        this.currentUser = user;
         // Initialize views
         dashboardView = new DashboardView(this::navigateTo);
         accountView = new AccountView();
         depositWithdrawView = new DepositWithdrawView();
         transferView = new TransferView();
-        historyView = new HistoryView();
-        proxyDemoView = new ProxyDemoView();
+        historyView = new HistoryView(user.role() != AuthService.Role.VIEWER);
+        profileView = new ProfileView(auth, user);
+        if (user.role() == AuthService.Role.ADMIN) {
+            proxyDemoView = new ProxyDemoView();
+            userView = new UserView(auth);
+        }
 
         // Setup center scroll pane
         centerScrollPane.getStyleClass().add("main-scroll-pane");
@@ -86,11 +95,19 @@ public class MainLayout extends BorderPane {
         navTitle.getStyleClass().add("nav-section-title");
 
         addNavButton("dashboard", "📊  Tổng quan (Dashboard)");
-        addNavButton("accounts", "👤  Mở tài khoản (Builder)");
-        addNavButton("deposit", "💵  Nạp & Rút tiền (State)");
-        addNavButton("transfer", "🔁  Chuyển khoản (Facade)");
+        if (currentUser.role() == AuthService.Role.ADMIN) {
+            addNavButton("accounts", "👤  Mở tài khoản (Builder)");
+        }
+        if (currentUser.role() != AuthService.Role.VIEWER) {
+            addNavButton("deposit", "💵  Nạp & Rút tiền (State)");
+            addNavButton("transfer", "🔁  Chuyển khoản (Facade)");
+        }
         addNavButton("history", "📜  Lịch sử & Hoàn tác (Command)");
-        addNavButton("proxy", "🛡️  Phân quyền (Proxy)");
+        if (currentUser.role() == AuthService.Role.ADMIN) {
+            addNavButton("proxy", "🛡️  Phân quyền (Proxy)");
+            addNavButton("users", "🔐  Người dùng");
+        }
+        addNavButton("profile", "⚙  Tài khoản đăng nhập");
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -108,7 +125,11 @@ public class MainLayout extends BorderPane {
         Label patternCount = new Label("★ 9 Patterns Active");
         patternCount.setStyle("-fx-text-fill: #C9A84C; -fx-font-size: 11px; -fx-font-weight: bold;");
 
-        footer.getChildren().addAll(patternCount, lblSidebarDbInfo, lblSidebarUndoInfo);
+        Label signedIn = new Label("● " + currentUser.username() + " (" + currentUser.role() + ")");
+        signedIn.getStyleClass().add("sidebar-status-text");
+        Button signOut = new Button("Đăng xuất");
+        signOut.setOnAction(event -> getScene().getWindow().hide());
+        footer.getChildren().addAll(signedIn, signOut, patternCount, lblSidebarDbInfo, lblSidebarUndoInfo);
         footer.setPadding(new Insets(12));
 
         sidebar.getChildren().addAll(brand, navTitle, navButtonBox, spacer, footer);
@@ -125,6 +146,7 @@ public class MainLayout extends BorderPane {
     }
 
     public void navigateTo(String viewKey) {
+        if (!navButtons.containsKey(viewKey)) viewKey = "dashboard";
         // Reset active style
         for (Button btn : navButtons.values()) {
             btn.getStyleClass().remove("nav-button-active");
@@ -141,6 +163,8 @@ public class MainLayout extends BorderPane {
             case "transfer" -> transferView;
             case "history"  -> historyView;
             case "proxy"    -> proxyDemoView;
+            case "users"    -> userView;
+            case "profile"  -> profileView;
             default         -> dashboardView;
         };
 

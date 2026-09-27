@@ -215,7 +215,7 @@ public class TransferView extends VBox {
         }
         try {
             double amount = Double.parseDouble(txtAmount.getText().trim());
-            double fee = from.getFeeStrategy().calculateFee(Money.positive(amount));
+            double fee = Money.nonNegative(from.getFeeStrategy().calculateFee(Money.positive(amount)));
             lblFeeCalculation.setText(String.format("Phí: %s (%s)",
                     UiUtils.formatVnd(fee), from.getFeeStrategy().getName()));
         } catch (IllegalArgumentException e) {

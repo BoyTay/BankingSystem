@@ -21,8 +21,10 @@ public class HistoryView extends VBox {
     private final Button btnUndo = new Button("↶ Hoàn Tác Giao Dịch Gần Nhất (Undo Command)");
     private final ComboBox<String> cbAccountFilter = new ComboBox<>();
     private FilteredList<Transaction> filteredTransactions;
+    private final boolean canUndo;
 
-    public HistoryView() {
+    public HistoryView(boolean canUndo) {
+        this.canUndo = canUndo;
         setSpacing(24);
         getStyleClass().add("content-pane");
 
@@ -136,6 +138,7 @@ public class HistoryView extends VBox {
     }
 
     private void handleUndo() {
+        if (!canUndo) return;
         if (ctx.getTxHistory().isEmpty()) {
             UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể hoàn tác", "Undo Stack rỗng",
                     "Hiện không còn giao dịch chuyển khoản nào trong lịch sử để hoàn tác.");
@@ -180,7 +183,7 @@ public class HistoryView extends VBox {
     public void refresh() {
         int undoCount = ctx.getTxHistory().size();
         lblUndoCount.setText("Lệnh chờ Undo: " + undoCount);
-        btnUndo.setDisable(undoCount == 0);
+        btnUndo.setDisable(!canUndo || undoCount == 0);
 
         String currentFilter = cbAccountFilter.getValue();
         cbAccountFilter.getItems().clear();

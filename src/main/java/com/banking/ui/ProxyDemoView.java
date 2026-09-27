@@ -185,7 +185,7 @@ public class ProxyDemoView extends VBox {
             UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Chưa chọn tài khoản", "Vui lòng chọn tài khoản để thử nghiệm.");
             return null;
         }
-        RealAccount real = new RealAccount(acc);
+        RealAccount real = new RealAccount(acc, ctx.getFacade());
         return new AccountProxy(real, getSelectedRole());
     }
 
@@ -213,7 +213,7 @@ public class ProxyDemoView extends VBox {
             UiUtils.showAlert(Alert.AlertType.ERROR, "Proxy Security Block",
                     "⛔ Bị chặn bởi AccountProxy (SecurityException)",
                     "Vai trò READONLY chỉ có quyền xem số dư, không được phép nạp tiền vào hệ thống!");
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
         }
     }
@@ -233,7 +233,7 @@ public class ProxyDemoView extends VBox {
             UiUtils.showAlert(Alert.AlertType.ERROR, "Proxy Security Block",
                     "⛔ Bị chặn bởi AccountProxy (SecurityException)",
                     "Vai trò READONLY không có quyền rút tiền!\nAccountProxy đã chủ động chặn cuộc gọi trước khi tới RealAccount.");
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
         }
     }

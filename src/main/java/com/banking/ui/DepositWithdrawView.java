@@ -202,7 +202,7 @@ public class DepositWithdrawView extends VBox {
         }
         try {
             double amount = Money.positive(Double.parseDouble(txtWithdrawAmount.getText().trim()));
-            double fee = acc.getFeeStrategy().calculateFee(amount);
+            double fee = Money.nonNegative(acc.getFeeStrategy().calculateFee(amount));
             lblWithdrawFeePreview.setText(String.format("Phí ước tính: %s (Chiến lược: %s)",
                     UiUtils.formatVnd(fee), acc.getFeeStrategy().getName()));
         } catch (IllegalArgumentException e) {
@@ -218,7 +218,7 @@ public class DepositWithdrawView extends VBox {
         }
 
         try {
-            double amount = Double.parseDouble(txtDepositAmount.getText().trim());
+            double amount = Money.positive(Double.parseDouble(txtDepositAmount.getText().trim()));
             if (amount <= 0) {
                 UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Số tiền nạp phải lớn hơn 0.");
                 return;
@@ -253,14 +253,14 @@ public class DepositWithdrawView extends VBox {
         }
 
         try {
-            double amount = Double.parseDouble(txtWithdrawAmount.getText().trim());
+            double amount = Money.positive(Double.parseDouble(txtWithdrawAmount.getText().trim()));
             if (amount <= 0) {
                 UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Số tiền rút phải lớn hơn 0.");
                 return;
             }
 
-            double fee = acc.getFeeStrategy().calculateFee(amount);
-            double total = amount + fee;
+            double fee = Money.nonNegative(acc.getFeeStrategy().calculateFee(amount));
+            double total = Money.add(amount, fee);
             if (acc.getBalance() < total) {
                 UiUtils.showAlert(Alert.AlertType.ERROR, "Lỗi số dư", "Số dư không đủ",
                         String.format("Số dư hiện tại: %s\nTổng tiền cần (gồm phí %s): %s",

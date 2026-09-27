@@ -9,19 +9,33 @@ import com.banking.model.Account;
 public class RealAccount implements BankAccount {
 
     private final Account account;
+    private final BankingFacade facade;
 
     public RealAccount(Account account) {
+        this(account, null);
+    }
+
+    public RealAccount(Account account, BankingFacade facade) {
         this.account = account;
+        this.facade = facade;
     }
 
     @Override
     public void deposit(double amount) {
+        if (facade != null) {
+            facade.deposit(account.getAccountNumber(), amount);
+            return;
+        }
         account.deposit(amount);
         account.notifyObservers(String.format("Nạp tiền: +%.2f. Số dư: %.2f", amount, account.getBalance()));
     }
 
     @Override
     public void withdraw(double amount) {
+        if (facade != null) {
+            facade.withdraw(account.getAccountNumber(), amount);
+            return;
+        }
         account.withdraw(amount);
     }
 

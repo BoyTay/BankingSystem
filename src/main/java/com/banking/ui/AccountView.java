@@ -199,14 +199,18 @@ public class AccountView extends VBox {
             return;
         }
 
-        Account created = ctx.getAccountService().openAccount(owner, cbAccountType.getValue());
-        ctx.attachUiObserver(created);
-
-        if (initialDeposit > 0) {
-            ctx.getFacade().deposit(created.getAccountNumber(), initialDeposit);
+        Account created;
+        try {
+            created = ctx.getAccountService().openAccount(owner, cbAccountType.getValue());
+            ctx.attachUiObserver(created);
+            if (initialDeposit > 0) ctx.getFacade().deposit(created.getAccountNumber(), initialDeposit);
+            ctx.notifyDataChanged();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            ctx.notifyDataChanged();
+            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể hoàn tất", "Kiểm tra tài khoản và giao dịch nạp ban đầu",
+                    exception.getMessage());
+            return;
         }
-
-        ctx.notifyDataChanged();
 
         UiUtils.showAlert(Alert.AlertType.INFORMATION, "Thành công", "Mở tài khoản thành công!",
                 "Tài khoản số: " + created.getAccountNumber() + "\nChủ tài khoản: " + created.getOwnerName()
@@ -266,17 +270,25 @@ public class AccountView extends VBox {
                     btnToggle.setText("🔒 Khóa (Lock)");
                     btnToggle.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-background-radius: 6px;");
                     btnToggle.setOnAction(e -> {
-                        ctx.getAccountService().lockAccount(acc.getAccountNumber());
-                        ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang LockedState.");
-                        ctx.notifyDataChanged();
+                        try {
+                            ctx.getAccountService().lockAccount(acc.getAccountNumber());
+                            ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang LockedState.");
+                            ctx.notifyDataChanged();
+                        } catch (IllegalStateException exception) {
+                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể khóa", null, exception.getMessage());
+                        }
                     });
                 } else {
                     btnToggle.setText("🔓 Mở khóa");
                     btnToggle.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-background-radius: 6px;");
                     btnToggle.setOnAction(e -> {
-                        ctx.getAccountService().unlockAccount(acc.getAccountNumber());
-                        ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang ActiveState.");
-                        ctx.notifyDataChanged();
+                        try {
+                            ctx.getAccountService().unlockAccount(acc.getAccountNumber());
+                            ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang ActiveState.");
+                            ctx.notifyDataChanged();
+                        } catch (IllegalStateException exception) {
+                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể mở khóa", null, exception.getMessage());
+                        }
                     });
                 }
                 setGraphic(btnToggle);

@@ -46,7 +46,9 @@ public class UIContext {
         this.txHistory = new TransactionHistory();
         this.facade = new BankingFacade(accountService, transactionService, notificationService, txHistory);
 
-        seedInitialData();
+        txHistory.restoreFromLedger(transactionService.getAllTransactions(), accountService);
+
+        if (Boolean.getBoolean("banking.demo.seed")) seedInitialData();
         refresh();
     }
 

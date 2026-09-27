@@ -1,5 +1,6 @@
 package com.banking.ui;
 
+import com.banking.service.AuthService;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -11,7 +12,13 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        MainLayout layout = new MainLayout();
+        AuthService auth = new AuthService();
+        AuthService.User user = LoginDialog.show(auth);
+        if (user == null) {
+            primaryStage.close();
+            return;
+        }
+        MainLayout layout = new MainLayout(auth, user);
         Scene scene = new Scene(layout, 1200, 760);
 
         // Load global CSS design system
