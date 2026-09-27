@@ -6,11 +6,13 @@ import com.banking.model.enums.AccountType;
 import com.banking.pattern.behavioral.AccountObserver;
 import com.banking.pattern.behavioral.AccountState;
 import com.banking.pattern.behavioral.ActiveState;
+import com.banking.pattern.behavioral.LockedState;
 import com.banking.pattern.behavioral.FeeStrategy;
 import com.banking.pattern.behavioral.StandardFeeStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * Tài khoản ngân hàng — sử dụng Builder Pattern để khởi tạo.
@@ -19,7 +21,7 @@ public class Account {
 
     private final String accountNumber;
     private final String ownerName;
-    private double balance;
+    private BigDecimal balance;
     private AccountType type;
     private AccountStatus status;
     private FeeStrategy feeStrategy;
@@ -31,9 +33,14 @@ public class Account {
     private Account(Builder builder) {
         this.accountNumber = builder.accountNumber;
         this.ownerName     = builder.ownerName;
-        this.balance       = builder.balance;
+        this.balance       = Money.of(Money.nonNegative(builder.balance));
         this.type          = builder.type;
         this.status        = builder.status;
+        if ((status == AccountStatus.ACTIVE && !(builder.state instanceof ActiveState))
+                || (status == AccountStatus.LOCKED && !(builder.state instanceof LockedState))
+                || (status != AccountStatus.ACTIVE && status != AccountStatus.LOCKED)) {
+            throw new IllegalArgumentException("Trạng thái tài khoản và State không khớp hoặc chưa được hỗ trợ.");
+        }
         this.feeStrategy   = builder.feeStrategy;
         this.state         = builder.state;
         // Gắn state vào account hiện tại
@@ -44,17 +51,23 @@ public class Account {
 
     public String getAccountNumber() { return accountNumber; }
     public String getOwnerName()     { return ownerName; }
-    public double getBalance()       { return balance; }
+    public double getBalance()       { return balance.doubleValue(); }
     public AccountType getType()     { return type; }
     public AccountStatus getStatus() { return status; }
     public FeeStrategy getFeeStrategy() { return feeStrategy; }
     public AccountState getState()   { return state; }
 
-    public void setBalance(double balance)           { this.balance = balance; }
-    public void setStatus(AccountStatus status)      { this.status = status; }
+    public void setBalance(double balance)           { this.balance = Money.of(Money.nonNegative(balance)); }
     public void setFeeStrategy(FeeStrategy strategy) { this.feeStrategy = strategy; }
 
     public void setState(AccountState state) {
+        if (state instanceof ActiveState) {
+            this.status = AccountStatus.ACTIVE;
+        } else if (state instanceof LockedState) {
+            this.status = AccountStatus.LOCKED;
+        } else {
+            throw new IllegalArgumentException("State chưa được hỗ trợ.");
+        }
         this.state = state;
         this.state.setAccount(this);
     }
@@ -71,24 +84,29 @@ public class Account {
 
     public void notifyObservers(String message) {
         for (AccountObserver o : observers) {
-            o.update(accountNumber, message);
+            try {
+                o.update(accountNumber, message);
+            } catch (RuntimeException e) {
+                System.err.println("[Observer] Không gửi được thông báo cho " + accountNumber
+                        + ": " + e.getMessage());
+            }
         }
     }
 
     // ── Deposit / Withdraw delegated to State ───────────────
 
     public void deposit(double amount) {
-        state.deposit(amount);
+        state.deposit(Money.positive(amount));
     }
 
     public void withdraw(double amount) {
-        state.withdraw(amount);
+        state.withdraw(Money.positive(amount));
     }
 
     @Override
     public String toString() {
         return String.format("Account{number='%s', owner='%s', balance=%.2f, type=%s, status=%s}",
-                accountNumber, ownerName, balance, type, status);
+                accountNumber, ownerName, getBalance(), type, status);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -135,6 +153,10 @@ public class Account {
         }
 
         public Account build() {
+            if (accountNumber == null || accountNumber.isBlank()
+                    || ownerName == null || ownerName.isBlank()) {
+                throw new IllegalArgumentException("Số tài khoản và tên chủ tài khoản không được trống.");
+            }
             return new Account(this);
         }
     }

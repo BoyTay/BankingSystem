@@ -15,12 +15,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AccountService {
 
     private final DatabaseManager db = DatabaseManager.getInstance();
-    private final AtomicInteger accountCounter = new AtomicInteger(1000);
+    private static final AtomicInteger accountCounter = new AtomicInteger(1000);
 
     /**
      * Tạo tài khoản mới bằng Builder pattern.
      */
     public Account openAccount(String ownerName, AccountType type) {
+        if (ownerName == null || ownerName.isBlank() || type == null) {
+            throw new IllegalArgumentException("Tên chủ tài khoản và loại tài khoản không được trống.");
+        }
         String accNo = "ACC" + accountCounter.incrementAndGet();
 
         // Chọn FeeStrategy theo loại tài khoản
@@ -67,7 +70,6 @@ public class AccountService {
             return;
         }
         acc.setState(new LockedState());
-        acc.setStatus(AccountStatus.LOCKED);
         System.out.printf("  🔒 Tài khoản %s đã bị KHÓA.%n", accountNumber);
     }
 
@@ -81,7 +83,6 @@ public class AccountService {
             return;
         }
         acc.setState(new ActiveState());
-        acc.setStatus(AccountStatus.ACTIVE);
         System.out.printf("  🔓 Tài khoản %s đã được MỞ KHÓA.%n", accountNumber);
     }
 }

@@ -1,6 +1,7 @@
 package com.banking.ui;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 import com.banking.model.enums.AccountStatus;
 import com.banking.model.enums.AccountType;
 import javafx.beans.property.SimpleObjectProperty;
@@ -192,12 +193,8 @@ public class AccountView extends VBox {
 
         double initialDeposit = 0;
         try {
-            initialDeposit = Double.parseDouble(txtInitialDeposit.getText().trim());
-            if (initialDeposit < 0) {
-                UiUtils.showAlert(Alert.AlertType.WARNING, "Lỗi nhập liệu", "Số tiền không hợp lệ", "Số tiền nạp ban đầu không thể âm.");
-                return;
-            }
-        } catch (NumberFormatException e) {
+            initialDeposit = Money.nonNegative(Double.parseDouble(txtInitialDeposit.getText().trim()));
+        } catch (IllegalArgumentException e) {
             UiUtils.showAlert(Alert.AlertType.WARNING, "Lỗi nhập liệu", "Số tiền không hợp lệ", "Vui lòng nhập một số hợp lệ.");
             return;
         }
@@ -206,8 +203,7 @@ public class AccountView extends VBox {
         ctx.attachUiObserver(created);
 
         if (initialDeposit > 0) {
-            created.deposit(initialDeposit);
-            ctx.getTransactionService().logTransaction("SYSTEM", created.getAccountNumber(), initialDeposit, 0, "Nạp tiền ban đầu khi mở tài khoản");
+            ctx.getFacade().deposit(created.getAccountNumber(), initialDeposit);
         }
 
         ctx.notifyDataChanged();

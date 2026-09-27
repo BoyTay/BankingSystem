@@ -1,6 +1,7 @@
 package com.banking.ui;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 import com.banking.model.enums.AccountStatus;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -200,11 +201,11 @@ public class DepositWithdrawView extends VBox {
             return;
         }
         try {
-            double amount = Double.parseDouble(txtWithdrawAmount.getText().trim());
+            double amount = Money.positive(Double.parseDouble(txtWithdrawAmount.getText().trim()));
             double fee = acc.getFeeStrategy().calculateFee(amount);
             lblWithdrawFeePreview.setText(String.format("Phí ước tính: %s (Chiến lược: %s)",
                     UiUtils.formatVnd(fee), acc.getFeeStrategy().getName()));
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             lblWithdrawFeePreview.setText("Phí ước tính: 0 VND");
         }
     }
@@ -231,8 +232,8 @@ public class DepositWithdrawView extends VBox {
                             UiUtils.formatVnd(amount), acc.getAccountNumber(), UiUtils.formatVnd(acc.getBalance())));
 
             txtDepositAmount.clear();
-        } catch (NumberFormatException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Không thể nạp tiền", e.getMessage());
         }
     }
 
@@ -275,8 +276,8 @@ public class DepositWithdrawView extends VBox {
                             UiUtils.formatVnd(amount), UiUtils.formatVnd(fee), UiUtils.formatVnd(acc.getBalance())));
 
             txtWithdrawAmount.clear();
-        } catch (NumberFormatException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Không thể rút tiền", e.getMessage());
         }
     }
 

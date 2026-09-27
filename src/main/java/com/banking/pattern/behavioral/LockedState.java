@@ -2,6 +2,7 @@
 package com.banking.pattern.behavioral;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 
 /**
  * Trạng thái LOCKED — cho phép nạp tiền nhưng từ chối rút tiền.
@@ -21,7 +22,7 @@ public class LockedState implements AccountState {
             System.out.println("  [LockedState] Số tiền nạp phải lớn hơn 0.");
             return;
         }
-        account.setBalance(account.getBalance() + amount);
+        account.setBalance(Money.add(account.getBalance(), amount));
         System.out.printf("  [LockedState] Nạp thành công %.2f (tài khoản bị khóa nhưng vẫn nhận tiền). Số dư: %.2f%n",
                 amount, account.getBalance());
     }
