@@ -3,7 +3,7 @@
 Dự án Java Maven mô phỏng hệ thống **Ngân hàng / Ví điện tử**, minh họa **9 Design Patterns**
 thuộc 3 nhóm: Creational, Structural, và Behavioral.
 
-> **Mục đích**: Bài tập môn Thiết kế phần mềm (Software Design Patterns).
+> **Mục đích**: Bài tập môn Mẫu thiết kế (Design Patterns).
 
 ---
 
@@ -15,23 +15,46 @@ thuộc 3 nhóm: Creational, Structural, và Behavioral.
 
 ## 🚀 Cách chạy ứng dụng
 
-### Cách 1: Giao diện Đồ họa Desktop (JavaFX Modern UI) [Khuyên dùng]
-Chạy trực tiếp file script:
-- Nhấp đúp chuột vào `run-gui.bat` (hoặc `run.bat` rồi chọn 1).
+### Chạy toàn bộ bằng Docker
+
+Cần Docker Desktop (Linux containers) hoặc Docker Engine có Compose. GUI được hiển thị trong trình duyệt nhờ noVNC; máy chạy Docker không cần cài JDK hay Maven.
+
+```powershell
+docker compose up --build -d gui
+```
+
+Mở `http://localhost:6080/vnc.html?autoconnect=1&resize=scale` để dùng giao diện JavaFX. Cổng chỉ được mở trên `localhost` của máy chạy Docker.
+
+Để chuyển sang menu CLI dùng cùng dữ liệu, dừng GUI trước rồi chạy:
+
+```powershell
+docker compose stop gui
+docker compose run --rm cli
+```
+
+Sau khi thoát CLI, bật lại GUI bằng `docker compose up -d gui`. SQLite nằm trong Docker volume `vietbank_banking-data` và vẫn còn sau `docker compose down`; **không dùng `down -v` nếu muốn giữ dữ liệu**. Container sẽ từ chối khởi động thêm một phiên trên cùng volume khi GUI hoặc CLI đang dùng dữ liệu.
+
+### Cách 1: Giao diện dòng lệnh (CLI)
+Mở PowerShell trong thư mục dự án và chạy:
+```powershell
+.\run.bat
+```
+
+`run.bat` tự tìm JDK nếu `JAVA_HOME` chưa được đặt, sau đó mở menu trong terminal. Lần đầu cần tạo tài khoản ADMIN.
+
+Hoặc dùng lệnh terminal:
+```powershell
+$env:JAVA_HOME = "C:\duong-dan-den-jdk"
+.\mvnw.cmd -q compile exec:java
+```
+
+### Cách 2: Giao diện đồ họa Desktop (JavaFX)
+- Chạy `run-gui.bat` nếu muốn dùng giao diện đồ họa.
 
 Hoặc dùng lệnh terminal:
 ```powershell
 $env:JAVA_HOME = "C:\duong-dan-den-jdk"
 .\mvnw.cmd javafx:run
-```
-
-### Cách 2: Giao diện Console Terminal (CLI)
-- Nhấp đúp chuột vào `run.bat` rồi chọn 2.
-
-Hoặc dùng lệnh terminal:
-```powershell
-$env:JAVA_HOME = "C:\duong-dan-den-jdk"
-.\mvnw.cmd exec:java -D"exec.mainClass=com.banking.Main"
 ```
 
 ---
@@ -146,20 +169,22 @@ src/main/java/com/banking/
 ## 🎮 Menu console
 
 ```
-┌──────────────── MENU ────────────────┐
-│  1. Mở tài khoản       (Builder)     │
-│  2. Nạp tiền           (Observer)    │
-│  3. Rút tiền           (State)       │
-│  4. Chuyển khoản       (Facade+Cmd)  │
-│  5. Chuyển khoản mẫu   (Prototype)   │
-│  6. Khóa/Mở khóa TK   (State)       │
-│  7. Xem lịch sử GD                   │
-│  8. Hoàn tác GD cuối   (Command)     │
-│  9. Demo Proxy         (Proxy)       │
-│ 10. Danh sách tài khoản              │
-│  0. Thoát                            │
-└──────────────────────────────────────┘
+1. Mở tài khoản (ADMIN)
+2. Nạp tiền
+3. Rút tiền
+4. Chuyển khoản
+5. Chuyển khoản mẫu
+6. Khóa/Mở khóa tài khoản (ADMIN)
+7. Xem lịch sử giao dịch
+8. Hoàn tác chuyển khoản cuối
+9. Demo Proxy (ADMIN)
+10. Danh sách tài khoản
+11. Tạo người dùng (ADMIN)
+12. Đổi mật khẩu
+0. Thoát
 ```
+
+Menu chỉ hiển thị các mục vai trò đăng nhập được phép dùng.
 
 ---
 
@@ -180,9 +205,13 @@ src/main/java/com/banking/
 
 ## 📝 Ghi chú
 
-- Dữ liệu chỉ lưu trong RAM qua `DatabaseManager` (Singleton), mất khi thoát ứng dụng. Đây là ứng dụng mô phỏng, không kết nối ngân hàng thật.
+- Dữ liệu tài khoản, giao dịch và người dùng được lưu trong SQLite tại `%USERPROFILE%\.vietbank\banking.db` trên Windows (hoặc `~/.vietbank/banking.db`). Tắt ứng dụng trước khi sao lưu hoặc chép tệp này sang máy khác.
+- Lần chạy đầu, ứng dụng yêu cầu tạo tài khoản ADMIN và mật khẩu tối thiểu 8 ký tự. ADMIN tạo thêm STAFF hoặc VIEWER tại mục **Người dùng**. STAFF thực hiện giao dịch; VIEWER chỉ xem. Mỗi người có thể đổi mật khẩu tại **Tài khoản đăng nhập**. Nếu quên mật khẩu ADMIN, hiện chưa có quy trình khôi phục tự động.
+- Ứng dụng không tự tạo tài khoản hoặc tiền mẫu. Để bật dữ liệu trình diễn trên cơ sở dữ liệu trống, thêm JVM option `-Dbanking.demo.seed=true` khi chạy GUI.
+- Có thể đổi vị trí dữ liệu bằng JVM option `-Dbanking.data.file=đường_dẫn_tệp.db`. Không chạy hai phiên ứng dụng trên cùng một tệp dữ liệu.
 - Tiền lưu ở lõi bằng `BigDecimal`, làm tròn đến 1 VND; giao diện cũ vẫn truyền/nhận `double` và lõi giới hạn giá trị đến 9.000.000.000.000.000 VND.
-- Proxy là màn hình minh họa phân quyền riêng; giao diện chính chưa có đăng nhập và vai trò người dùng.
+- Proxy vẫn là màn hình minh họa pattern riêng. Đăng nhập ADMIN/STAFF/VIEWER kiểm soát các chức năng trong GUI và CLI.
+- Đây là ứng dụng quản lý mô phỏng dùng cục bộ cho đồ án; giao dịch nạp/rút và SMS/Email không kết nối dịch vụ tài chính hay hệ thống gửi tin thật.
 - Chạy kiểm thử: `./mvnw test` (Windows: `.\mvnw.cmd test`).
 - Không sử dụng Spring hay Lombok.
 - Mỗi file pattern đều có comment dòng 1: `// Pattern: [Tên] — [Mô tả]`

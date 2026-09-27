@@ -2,7 +2,7 @@
 
 ## Bài toán và phạm vi
 
-Ứng dụng minh họa 9 mẫu thiết kế qua các thao tác mở tài khoản, nạp/rút tiền, chuyển khoản, hoàn tác và xem thông báo. Dữ liệu lưu trong RAM để người học tập trung vào cách các đối tượng phối hợp. Đây là mô phỏng phục vụ môn Mẫu thiết kế, không phải hệ thống giao dịch ngân hàng thật.
+Ứng dụng minh họa 9 mẫu thiết kế qua các thao tác mở tài khoản, nạp/rút tiền, chuyển khoản, hoàn tác và xem thông báo. Dữ liệu được giữ trong bộ nhớ khi chạy và lưu bền vững bằng SQLite. Đây là mô phỏng phục vụ môn Mẫu thiết kế, không phải hệ thống giao dịch ngân hàng thật.
 
 ## Sơ đồ lớp chính
 
@@ -84,9 +84,9 @@ sequenceDiagram
 ## Vai trò của từng pattern
 
 - **Builder:** `Account.Builder` gom tham số khởi tạo tài khoản; `build()` kiểm tra tên, số tài khoản và sự khớp giữa trạng thái với State.
-- **Singleton:** `DatabaseManager` là một kho dữ liệu RAM dùng chung. `AccountService` cấp số tài khoản duy nhất cho các instance service trong cùng tiến trình.
+- **Singleton:** `DatabaseManager` là một kho dữ liệu dùng chung trong tiến trình, khôi phục và lưu tài khoản/giao dịch qua SQLite. `AccountService` cấp số tài khoản duy nhất trong một tiến trình.
 - **Prototype:** `TransferTemplate.clone()` tạo bản sao mẫu chuyển tiền; sửa bản sao không đổi mẫu gốc.
-- **Proxy:** `AccountProxy` kiểm tra vai trò trước khi chuyển lời gọi đến `RealAccount`; `READONLY` chỉ xem số dư. Màn hình này là demo phân quyền riêng vì ứng dụng chưa có đăng nhập.
+- **Proxy:** `AccountProxy` kiểm tra vai trò trước khi chuyển lời gọi đến `RealAccount`; `READONLY` chỉ xem số dư. Màn hình này minh họa pattern; đăng nhập ứng dụng dùng ADMIN/STAFF/VIEWER riêng.
 - **Facade:** `BankingFacade` là cửa vào nghiệp vụ của GUI và CLI. Nó kiểm tra điều kiện, tính phí, gọi Command, lưu giao dịch và kích hoạt thông báo.
 - **Command:** `TransferCommand` đóng gói chuyển khoản và phép đảo ngược; `TransactionHistory` chỉ lưu lệnh thực thi thành công và giữ lệnh lại nếu undo thất bại.
 - **Observer:** tài khoản phát thông báo cho SMS, Email và vùng log UI. Các notifier hiện chỉ in mô phỏng, không gửi tin thật.
@@ -99,10 +99,10 @@ sequenceDiagram
 2. Tài khoản nguồn phải hoạt động, nguồn và đích phải khác nhau, nguồn phải đủ số tiền cộng phí.
 3. Giao dịch thất bại không tạo lịch sử, không gửi thông báo và không vào ngăn xếp undo.
 4. Undo hoàn lại tiền và phí cho nguồn, trừ tiền từ đích, đồng thời ghi giao dịch mới có `relatedTransactionId` trỏ đến giao dịch gốc. Nếu đích thiếu tiền, undo bị từ chối và lệnh vẫn còn trong ngăn xếp.
-5. Dữ liệu RAM mất sau khi tắt ứng dụng. Chạy `mvnw test` để kiểm tra các tình huống chính trước buổi demo.
+5. SQLite lưu tài khoản, số dư, lịch sử và người dùng qua các lần khởi động. Số dư và dòng lịch sử của mỗi giao dịch được ghi trong cùng một SQLite transaction. Chạy `mvnw test` để kiểm tra các tình huống chính trước buổi demo.
 
 ## Giới hạn và hướng mở rộng
 
 - UI và một số interface cũ còn dùng `double`; lớp lõi `Money` chuyển sang `BigDecimal` khi ghi số dư và giao dịch. Nếu phát triển thành sản phẩm thật, nên đổi toàn bộ API tiền sang `BigDecimal` hoặc kiểu `Money` bất biến.
-- Chưa có lưu trữ bền vững, xác thực người dùng, giao dịch cơ sở dữ liệu hay cơ chế đồng thời. Những phần này nằm ngoài phạm vi đồ án mẫu thiết kế hiện tại.
+- Ứng dụng hiện dành cho một máy/một phiên chạy tại một thời điểm. Chưa có máy chủ nhiều người dùng, đồng bộ liên máy, phục hồi mật khẩu hay tích hợp ngân hàng thật.
 - Hoàn tác là giao dịch bù trừ của mô phỏng. Trong hệ thống ngân hàng thật, quy tắc hoàn tiền và phê duyệt sẽ phức tạp hơn.
