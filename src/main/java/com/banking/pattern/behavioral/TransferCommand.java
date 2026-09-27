@@ -1,7 +1,8 @@
-// Pattern: Command (TransferCommand) — Lệnh chuyển khoản có thể undo/redo
+// Pattern: Command (TransferCommand) — Lệnh chuyển khoản có thể hoàn tác
 package com.banking.pattern.behavioral;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 
 /**
  * Command cụ thể — chuyển khoản giữa hai tài khoản.
@@ -14,45 +15,69 @@ public class TransferCommand implements Command {
     private final double amount;
     private final double fee;
     private boolean executed = false;
+    private String transactionId;
 
     public TransferCommand(Account fromAccount, Account toAccount,
                            double amount, double fee) {
         this.fromAccount = fromAccount;
         this.toAccount   = toAccount;
-        this.amount      = amount;
-        this.fee         = fee;
+        this.amount      = Money.positive(amount);
+        this.fee         = Money.nonNegative(fee);
     }
 
     @Override
-    public void execute() {
-        double totalDebit = amount + fee;
-        if (fromAccount.getBalance() < totalDebit) {
+    public boolean execute() {
+        if (executed || !Double.isFinite(amount) || amount <= 0
+                || !Double.isFinite(fee) || fee < 0
+                || fromAccount == toAccount
+                || fromAccount.getStatus() != com.banking.model.enums.AccountStatus.ACTIVE) {
+            return false;
+        }
+        double totalDebit = Money.add(amount, fee);
+        if (!Double.isFinite(totalDebit) || fromAccount.getBalance() < totalDebit) {
             System.out.printf("  [TransferCommand] Số dư TK %s không đủ (cần %.2f, có %.2f).%n",
                     fromAccount.getAccountNumber(), totalDebit, fromAccount.getBalance());
-            return;
+            return false;
         }
-        fromAccount.setBalance(fromAccount.getBalance() - totalDebit);
-        toAccount.setBalance(toAccount.getBalance() + amount);
+        // Tính trước để không bắt đầu giao dịch nếu tài khoản nhận vượt giới hạn tiền.
+        Money.add(toAccount.getBalance(), amount);
+        fromAccount.withdraw(totalDebit);
+        toAccount.deposit(amount);
         executed = true;
 
         System.out.printf("  [TransferCommand] Chuyển %.2f (phí %.2f) từ %s → %s thành công.%n",
                 amount, fee, fromAccount.getAccountNumber(), toAccount.getAccountNumber());
+        return true;
     }
 
     @Override
-    public void undo() {
+    public boolean undo() {
         if (!executed) {
             System.out.println("  [TransferCommand] Không có giao dịch nào để hoàn tác.");
-            return;
+            return false;
+        }
+        if (toAccount.getBalance() < amount) {
+            System.out.println("  [TransferCommand] Tài khoản nhận không đủ tiền để hoàn tác.");
+            return false;
         }
         // Hoàn tiền
-        toAccount.setBalance(toAccount.getBalance() - amount);
-        fromAccount.setBalance(fromAccount.getBalance() + amount + fee);
+        double newTargetBalance = Money.subtract(toAccount.getBalance(), amount);
+        double newSourceBalance = Money.add(fromAccount.getBalance(), Money.add(amount, fee));
+        toAccount.setBalance(newTargetBalance);
+        fromAccount.setBalance(newSourceBalance);
         executed = false;
 
         System.out.printf("  [TransferCommand] ↩ Hoàn tác chuyển khoản %.2f từ %s → %s.%n",
                 amount, fromAccount.getAccountNumber(), toAccount.getAccountNumber());
+        return true;
     }
+
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+    public String getTransactionId() { return transactionId; }
+    public Account getFromAccount() { return fromAccount; }
+    public Account getToAccount() { return toAccount; }
+    public double getAmount() { return amount; }
+    public double getFee() { return fee; }
 
     @Override
     public String describe() {

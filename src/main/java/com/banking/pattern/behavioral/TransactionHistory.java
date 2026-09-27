@@ -15,9 +15,12 @@ public class TransactionHistory {
     /**
      * Thực thi command và đưa vào stack lịch sử.
      */
-    public void executeCommand(Command command) {
-        command.execute();
+    public boolean executeCommand(Command command) {
+        if (!command.execute()) {
+            return false;
+        }
         history.push(command);
+        return true;
     }
 
     /**
@@ -28,10 +31,17 @@ public class TransactionHistory {
             System.out.println("  [TransactionHistory] Không còn giao dịch nào để hoàn tác.");
             return false;
         }
-        Command last = history.pop();
+        Command last = history.peek();
+        if (!last.undo()) {
+            return false;
+        }
+        history.pop();
         System.out.println("  [TransactionHistory] Hoàn tác: " + last.describe());
-        last.undo();
         return true;
+    }
+
+    public Command peekLast() {
+        return history.peek();
     }
 
     /**

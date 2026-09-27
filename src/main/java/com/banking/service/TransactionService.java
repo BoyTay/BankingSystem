@@ -18,8 +18,15 @@ public class TransactionService {
      */
     public Transaction logTransaction(String fromAccNo, String toAccNo,
                                        double amount, double fee, String description) {
+        return logTransaction(fromAccNo, toAccNo, amount, fee, description, null);
+    }
+
+    public Transaction logTransaction(String fromAccNo, String toAccNo,
+                                       double amount, double fee, String description,
+                                       String relatedTransactionId) {
         String txId = "TX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        Transaction tx = new Transaction(txId, fromAccNo, toAccNo, amount, fee, description);
+        Transaction tx = new Transaction(txId, fromAccNo, toAccNo, amount, fee, description,
+                relatedTransactionId);
         db.saveTransaction(tx);
         return tx;
     }

@@ -9,12 +9,12 @@ public interface Command {
     /**
      * Thực thi lệnh.
      */
-    void execute();
+    boolean execute();
 
     /**
      * Hoàn tác lệnh.
      */
-    void undo();
+    boolean undo();
 
     /**
      * Mô tả lệnh (để hiển thị trong lịch sử).
