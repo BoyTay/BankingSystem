@@ -30,12 +30,10 @@ public class Main {
     private static final TransactionService transactionService = new TransactionService();
     private static final NotificationService notificationService = new NotificationService();
 
-    // ── Facade ──────────────────────────────────────────────
-    private static final BankingFacade facade = new BankingFacade(
-            accountService, transactionService, notificationService);
-
     // ── Command History ─────────────────────────────────────
     private static final TransactionHistory txHistory = new TransactionHistory();
+    private static final BankingFacade facade = new BankingFacade(
+            accountService, transactionService, notificationService, txHistory);
 
     // ═══════════════════════════════════════════════════════
     //  MAIN
@@ -58,22 +56,26 @@ public class Main {
             printMenu();
             String choice = scanner.nextLine().trim();
 
-            switch (choice) {
-                case "1"  -> openAccount();
-                case "2"  -> deposit();
-                case "3"  -> withdraw();
-                case "4"  -> transfer();
-                case "5"  -> transferWithPrototype();
-                case "6"  -> lockUnlockAccount();
-                case "7"  -> viewHistory();
-                case "8"  -> undoLastTransaction();
-                case "9"  -> proxyDemo();
-                case "10" -> listAccounts();
-                case "0"  -> {
-                    running = false;
-                    System.out.println("\n👋 Cảm ơn đã sử dụng hệ thống. Tạm biệt!");
+            try {
+                switch (choice) {
+                    case "1"  -> openAccount();
+                    case "2"  -> deposit();
+                    case "3"  -> withdraw();
+                    case "4"  -> transfer();
+                    case "5"  -> transferWithPrototype();
+                    case "6"  -> lockUnlockAccount();
+                    case "7"  -> viewHistory();
+                    case "8"  -> undoLastTransaction();
+                    case "9"  -> proxyDemo();
+                    case "10" -> listAccounts();
+                    case "0"  -> {
+                        running = false;
+                        System.out.println("\n👋 Cảm ơn đã sử dụng hệ thống. Tạm biệt!");
+                    }
+                    default -> System.out.println("  ❌ Lựa chọn không hợp lệ. Vui lòng thử lại.");
                 }
-                default -> System.out.println("  ❌ Lựa chọn không hợp lệ. Vui lòng thử lại.");
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                System.out.println("  ❌ " + e.getMessage());
             }
         }
         scanner.close();
@@ -179,20 +181,8 @@ public class Main {
         double amount = askAmount("Số tiền chuyển");
         if (amount <= 0) return;
 
-        // Tính phí qua Strategy
-        double fee = fromAcc.getFeeStrategy().calculateFee(amount);
-        System.out.printf("  [Strategy] Phí (%s): %.2f%n", fromAcc.getFeeStrategy().getName(), fee);
-
-        // Tạo Command và thực thi qua TransactionHistory
-        TransferCommand cmd = new TransferCommand(fromAcc, toAcc, amount, fee);
-        txHistory.executeCommand(cmd);
-
-        // Log & Notify qua Facade services
-        transactionService.logTransaction(from, to, amount, fee, "Chuyển khoản (Command)");
-        notificationService.notifyAccountEvent(fromAcc,
-                String.format("Chuyển -%.2f đến %s", amount, to));
-        notificationService.notifyAccountEvent(toAcc,
-                String.format("Nhận +%.2f từ %s", amount, from));
+        Transaction tx = facade.transfer(from, to, amount, "Chuyển khoản từ console");
+        System.out.printf("  Thành công: %s | phí %.0f VND%n", tx.getId(), tx.getFee());
     }
 
     // ═══════════════════════════════════════════════════════
@@ -225,11 +215,9 @@ public class Main {
         Account fromAcc = accountService.findAccount(cloned.getFromAccountNumber());
         Account toAcc   = accountService.findAccount(cloned.getToAccountNumber());
         if (fromAcc != null && toAcc != null) {
-            double fee = fromAcc.getFeeStrategy().calculateFee(cloned.getAmount());
-            TransferCommand cmd = new TransferCommand(fromAcc, toAcc, cloned.getAmount(), fee);
-            txHistory.executeCommand(cmd);
-            transactionService.logTransaction(cloned.getFromAccountNumber(),
-                    cloned.getToAccountNumber(), cloned.getAmount(), fee, cloned.getDescription());
+            Transaction tx = facade.transfer(cloned.getFromAccountNumber(),
+                    cloned.getToAccountNumber(), cloned.getAmount(), cloned.getDescription());
+            System.out.println("  Giao dịch từ bản sao: " + tx.getId());
         } else {
             System.out.println("  ⚠ Không tìm thấy tài khoản — bỏ qua thực thi.");
         }
@@ -288,7 +276,9 @@ public class Main {
     private static void undoLastTransaction() {
         System.out.println("\n── Hoàn tác giao dịch cuối (Command Pattern) ──");
         System.out.printf("  Số lệnh có thể hoàn tác: %d%n", txHistory.size());
-        txHistory.undoLast();
+        Transaction reversal = facade.undoLastTransfer();
+        System.out.printf("  Đã hoàn tác %s bằng giao dịch %s%n",
+                reversal.getRelatedTransactionId(), reversal.getId());
     }
 
     // ═══════════════════════════════════════════════════════

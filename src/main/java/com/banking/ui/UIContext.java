@@ -43,8 +43,8 @@ public class UIContext {
         this.accountService = new AccountService();
         this.transactionService = new TransactionService();
         this.notificationService = new NotificationService();
-        this.facade = new BankingFacade(accountService, transactionService, notificationService);
         this.txHistory = new TransactionHistory();
+        this.facade = new BankingFacade(accountService, transactionService, notificationService, txHistory);
 
         seedInitialData();
         refresh();
@@ -72,17 +72,13 @@ public class UIContext {
             attachUiObserver(acc3);
 
             // Nạp tiền ban đầu
-            acc1.deposit(50_000_000);
-            acc2.deposit(12_000_000);
-            acc3.deposit(20_000_000);
-
-            // Giao dịch mẫu
-            transactionService.logTransaction("SYSTEM", acc1.getAccountNumber(), 50_000_000, 0, "Nạp tiền khởi tạo");
-            transactionService.logTransaction("SYSTEM", acc2.getAccountNumber(), 12_000_000, 0, "Nạp tiền khởi tạo");
-            transactionService.logTransaction("SYSTEM", acc3.getAccountNumber(), 20_000_000, 0, "Nạp tiền khởi tạo");
+            facade.deposit(acc1.getAccountNumber(), 50_000_000);
+            facade.deposit(acc2.getAccountNumber(), 12_000_000);
+            facade.deposit(acc3.getAccountNumber(), 20_000_000);
 
             // Chuyển khoản mẫu
-            facade.transfer(acc1.getAccountNumber(), acc2.getAccountNumber(), 2_000_000);
+            facade.transfer(acc1.getAccountNumber(), acc2.getAccountNumber(), 2_000_000,
+                    "Chuyển khoản mẫu");
         }
     }
 

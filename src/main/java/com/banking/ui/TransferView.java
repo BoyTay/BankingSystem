@@ -1,8 +1,8 @@
 package com.banking.ui;
 
 import com.banking.model.Account;
-import com.banking.model.enums.AccountStatus;
-import com.banking.pattern.behavioral.TransferCommand;
+import com.banking.model.Money;
+import com.banking.model.Transaction;
 import com.banking.pattern.creational.TransferTemplate;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -215,10 +215,10 @@ public class TransferView extends VBox {
         }
         try {
             double amount = Double.parseDouble(txtAmount.getText().trim());
-            double fee = from.getFeeStrategy().calculateFee(amount);
+            double fee = from.getFeeStrategy().calculateFee(Money.positive(amount));
             lblFeeCalculation.setText(String.format("Phí: %s (%s)",
                     UiUtils.formatVnd(fee), from.getFeeStrategy().getName()));
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             lblFeeCalculation.setText("Phí giao dịch: 0 VND");
         }
     }
@@ -232,55 +232,23 @@ public class TransferView extends VBox {
             return;
         }
 
-        if (from.getAccountNumber().equals(to.getAccountNumber())) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Tài khoản trùng nhau", "Tài khoản nguồn và đích không thể giống nhau.");
-            return;
-        }
-
-        if (from.getStatus() == AccountStatus.LOCKED) {
-            UiUtils.showAlert(Alert.AlertType.ERROR, "Lỗi State Pattern", "Tài khoản nguồn đã bị KHÓA",
-                    "State Pattern: Tài khoản " + from.getAccountNumber() + " đang ở LockedState, không thể thực hiện giao dịch chuyển tiền!");
-            return;
-        }
-
         try {
             double amount = Double.parseDouble(txtAmount.getText().trim());
-            if (amount <= 0) {
-                UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Số tiền chuyển phải lớn hơn 0.");
-                return;
-            }
-
-            double fee = from.getFeeStrategy().calculateFee(amount);
-            double totalNeeded = amount + fee;
-
-            if (from.getBalance() < totalNeeded) {
-                UiUtils.showAlert(Alert.AlertType.ERROR, "Lỗi số dư", "Số dư không đủ",
-                        String.format("Số dư hiện tại: %s\nTổng tiền cần chuyển (gồm phí %s): %s",
-                                UiUtils.formatVnd(from.getBalance()), UiUtils.formatVnd(fee), UiUtils.formatVnd(totalNeeded)));
-                return;
-            }
-
             String desc = txtDescription.getText().trim().isEmpty() ? "Chuyển tiền qua Banking" : txtDescription.getText().trim();
+            Transaction transaction = ctx.getFacade().transfer(
+                    from.getAccountNumber(), to.getAccountNumber(), amount, desc);
 
-            // 1. Tạo Command và thực thi qua TransactionHistory để hỗ trợ Undo
-            TransferCommand cmd = new TransferCommand(from, to, amount, fee);
-            ctx.getTxHistory().executeCommand(cmd);
-
-            // 2. Ghi nhận giao dịch vào hệ thống & Kích hoạt Observer thông báo
-            ctx.getTransactionService().logTransaction(from.getAccountNumber(), to.getAccountNumber(), amount, fee, desc + " (Command)");
-            ctx.getNotificationService().notifyAccountEvent(from, String.format("Chuyển -%s đến %s", UiUtils.formatVnd(amount), to.getAccountNumber()));
-            ctx.getNotificationService().notifyAccountEvent(to, String.format("Nhận +%s từ %s", UiUtils.formatVnd(amount), from.getAccountNumber()));
-
-            ctx.logCustomEvent("Command Pattern", "Đã thực thi TransferCommand [Từ " + from.getAccountNumber() + " -> " + to.getAccountNumber() + " " + UiUtils.formatVnd(amount) + "]");
+            ctx.logCustomEvent("Command Pattern", "Đã thực thi " + transaction.getId());
             ctx.notifyDataChanged();
 
             UiUtils.showAlert(Alert.AlertType.INFORMATION, "Chuyển khoản thành công", "Giao dịch đã thực hiện qua Command Pattern!",
-                    String.format("Chuyển: %s\nĐến tài khoản: %s (%s)\nPhí: %s\nSố dư mới của bạn: %s\n\n💡 Bạn có thể hoàn tác giao dịch này bất cứ lúc nào tại tab 'Lịch sử GD'.",
-                            UiUtils.formatVnd(amount), to.getAccountNumber(), to.getOwnerName(), UiUtils.formatVnd(fee), UiUtils.formatVnd(from.getBalance())));
+                    String.format("Chuyển: %s\nĐến tài khoản: %s (%s)\nPhí: %s\nSố dư mới của bạn: %s\n\nCó thể hoàn tác tại tab 'Lịch sử GD' nếu tài khoản nhận còn đủ số dư.",
+                            UiUtils.formatVnd(transaction.getAmount()), to.getAccountNumber(), to.getOwnerName(),
+                            UiUtils.formatVnd(transaction.getFee()), UiUtils.formatVnd(from.getBalance())));
 
             txtAmount.clear();
-        } catch (NumberFormatException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể chuyển khoản", "Giao dịch chưa thực hiện", e.getMessage());
         }
     }
 
@@ -292,11 +260,12 @@ public class TransferView extends VBox {
             return;
         }
 
-        double amount = 0;
+        double amount;
         try {
-            amount = Double.parseDouble(txtAmount.getText().trim());
-        } catch (NumberFormatException e) {
-            amount = 1_000_000;
+            amount = Money.positive(Double.parseDouble(txtAmount.getText().trim()));
+        } catch (IllegalArgumentException e) {
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể lưu mẫu", "Số tiền không hợp lệ", e.getMessage());
+            return;
         }
 
         String desc = txtDescription.getText().trim();
@@ -326,7 +295,12 @@ public class TransferView extends VBox {
         // Gọi clone() của Prototype Pattern
         TransferTemplate cloned = savedTemplate.clone();
         cloned.setDescription("Bản sao định kỳ — " + savedTemplate.getDescription());
-        cloned.setAmount(savedTemplate.getAmount() * 1.05); // Tăng 5% cho bản sao
+        try {
+            cloned.setAmount(Money.positive(savedTemplate.getAmount() * 1.05)); // Tăng 5% cho bản sao
+        } catch (IllegalArgumentException e) {
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể nhân bản", "Số tiền vượt giới hạn", e.getMessage());
+            return;
+        }
 
         txtTemplateInspector.setText("// KẾT QUẢ NHÂN BẢN BẰNG PROTOTYPE PATTERN (clone()):\n\n"
                 + "TransferTemplate cloned = original.clone();\n"

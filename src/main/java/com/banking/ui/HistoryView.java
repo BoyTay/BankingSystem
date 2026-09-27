@@ -145,15 +145,16 @@ public class HistoryView extends VBox {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận hoàn tác (Command Pattern)");
         confirm.setHeaderText("Bạn có chắc chắn muốn hoàn tác lệnh gần nhất?");
-        confirm.setContentText("Hành động này sẽ gọi Command.undo(), trả lại tiền cho người gửi và trừ lại tiền người nhận.");
+        confirm.setContentText("Lệnh chỉ hoàn tác nếu tài khoản nhận còn đủ tiền. Lịch sử sẽ ghi thêm giao dịch hoàn tác.");
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            boolean success = ctx.getTxHistory().undoLast();
-            if (success) {
-                ctx.getTransactionService().logTransaction("SYSTEM", "UNDO", 0, 0, "Hoàn tác thành công lệnh chuyển khoản gần nhất (Command.undo)");
+            try {
+                Transaction reversal = ctx.getFacade().undoLastTransfer();
                 ctx.logCustomEvent("Command Pattern", "Đã thực hiện Command.undo() — hoàn trả số dư tài khoản.");
                 ctx.notifyDataChanged();
                 UiUtils.showAlert(Alert.AlertType.INFORMATION, "Hoàn tác thành công", "Đã đảo ngược giao dịch",
-                        "Command Pattern đã hoàn tác thành công trạng thái của cả 2 tài khoản về trước thời điểm giao dịch!");
+                        "Đã tạo giao dịch hoàn tác " + reversal.getId() + " cho " + reversal.getRelatedTransactionId());
+            } catch (IllegalStateException ex) {
+                UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể hoàn tác", "Giao dịch chưa hoàn tác", ex.getMessage());
             }
         }
     }
@@ -168,7 +169,7 @@ public class HistoryView extends VBox {
         Label desc = new Label(
                 "• Giao diện Command: Định nghĩa 2 phương thức trừu tượng execute() và undo().\n"
                         + "• Đối tượng TransferCommand: Lưu vết (fromAccount, toAccount, amount, fee). Khi gọi undo(), nó tự động trừ tiền bên nhận và hoàn tiền + hoàn phí cho bên gửi.\n"
-                        + "• TransactionHistory (Invoker): Quản lý Deque<Command> theo cơ chế LIFO (Last-In-First-Out). Cho phép người dùng undo nhiều lần ngược về quá khứ."
+                        + "• TransactionHistory (Invoker): Quản lý Deque<Command> theo cơ chế LIFO. Chỉ lưu lệnh thành công; undo chỉ xóa lệnh khi bên nhận còn đủ số dư."
         );
         desc.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569; -fx-line-spacing: 4px;");
 

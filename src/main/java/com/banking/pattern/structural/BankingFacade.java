@@ -1,132 +1,135 @@
-// Pattern: Facade — Đơn giản hóa các thao tác ngân hàng phức tạp thành một giao diện duy nhất
+// Pattern: Facade — Một API nghiệp vụ cho nạp, rút, chuyển và hoàn tác
 package com.banking.pattern.structural;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 import com.banking.model.Transaction;
+import com.banking.model.enums.AccountStatus;
+import com.banking.pattern.behavioral.TransferCommand;
+import com.banking.pattern.behavioral.TransactionHistory;
 import com.banking.service.AccountService;
 import com.banking.service.NotificationService;
 import com.banking.service.TransactionService;
 
-/**
- * Facade bọc AccountService + TransactionService + NotificationService.
- * Một lần gọi transfer() = debit + credit + log + notify.
- */
+/** Điều phối State, Strategy, Command, lịch sử giao dịch và Observer. */
 public class BankingFacade {
-
     private final AccountService accountService;
     private final TransactionService transactionService;
     private final NotificationService notificationService;
+    private final TransactionHistory commandHistory;
 
     public BankingFacade(AccountService accountService,
                          TransactionService transactionService,
-                         NotificationService notificationService) {
-        this.accountService       = accountService;
-        this.transactionService   = transactionService;
-        this.notificationService  = notificationService;
+                         NotificationService notificationService,
+                         TransactionHistory commandHistory) {
+        this.accountService = accountService;
+        this.transactionService = transactionService;
+        this.notificationService = notificationService;
+        this.commandHistory = commandHistory;
     }
 
-    /**
-     * Chuyển khoản — thực hiện đầy đủ: debit + credit + log + notify.
-     */
-    public boolean transfer(String fromAccNo, String toAccNo, double amount) {
-        System.out.println("\n  ══ [Facade] Bắt đầu chuyển khoản ══");
-
-        // 1. Tìm tài khoản
-        Account from = accountService.findAccount(fromAccNo);
-        Account to   = accountService.findAccount(toAccNo);
-        if (from == null || to == null) {
-            System.out.println("  [Facade] Không tìm thấy tài khoản.");
-            return false;
+    public Transaction transfer(String fromAccNo, String toAccNo, double amount, String description) {
+        Account from = requireAccount(fromAccNo);
+        Account to = requireAccount(toAccNo);
+        if (from == to) {
+            throw new IllegalArgumentException("Tài khoản nguồn và đích phải khác nhau.");
+        }
+        requireOutgoingAccount(from);
+        if (to.getStatus() == AccountStatus.CLOSED || to.getStatus() == AccountStatus.SUSPENDED) {
+            throw new IllegalStateException("Tài khoản nhận không thể nhận tiền.");
         }
 
-        // 2. Tính phí
-        double fee = from.getFeeStrategy().calculateFee(amount);
-        System.out.printf("  [Facade] Phí giao dịch (%s): %.2f%n",
-                from.getFeeStrategy().getName(), fee);
-
-        // 3. Debit
-        double totalDebit = amount + fee;
-        if (from.getBalance() < totalDebit) {
-            System.out.printf("  [Facade] Số dư không đủ (cần %.2f, có %.2f).%n",
-                    totalDebit, from.getBalance());
-            return false;
+        double transferAmount = Money.positive(amount);
+        double fee = Money.nonNegative(from.getFeeStrategy().calculateFee(transferAmount));
+        double total = Money.add(transferAmount, fee);
+        if (from.getBalance() < total) {
+            throw new IllegalStateException("Số dư không đủ để chuyển tiền và trả phí.");
         }
-        from.setBalance(from.getBalance() - totalDebit);
-        System.out.printf("  [Facade] Debit %s: -%.2f (gồm phí). Số dư: %.2f%n",
-                fromAccNo, totalDebit, from.getBalance());
 
-        // 4. Credit
-        to.setBalance(to.getBalance() + amount);
-        System.out.printf("  [Facade] Credit %s: +%.2f. Số dư: %.2f%n",
-                toAccNo, amount, to.getBalance());
-
-        // 5. Log transaction
-        Transaction tx = transactionService.logTransaction(fromAccNo, toAccNo, amount, fee,
-                "Chuyển khoản qua Facade");
-        System.out.println("  [Facade] Ghi log giao dịch: " + tx.getId());
-
-        // 6. Notify observers
+        TransferCommand command = new TransferCommand(from, to, transferAmount, fee);
+        if (!commandHistory.executeCommand(command)) {
+            throw new IllegalStateException("Không thể thực hiện chuyển khoản.");
+        }
+        String detail = description == null || description.isBlank() ? "Chuyển khoản" : description.trim();
+        Transaction transaction = transactionService.logTransaction(fromAccNo, toAccNo,
+                transferAmount, fee, detail);
+        command.setTransactionId(transaction.getId());
         notificationService.notifyAccountEvent(from,
-                String.format("Chuyển khoản -%.2f đến %s", amount, toAccNo));
+                String.format("Chuyển -%.0f đến %s (phí %.0f)", transferAmount, toAccNo, fee));
         notificationService.notifyAccountEvent(to,
-                String.format("Nhận tiền +%.2f từ %s", amount, fromAccNo));
-
-        System.out.println("  ══ [Facade] Chuyển khoản hoàn tất ══\n");
-        return true;
+                String.format("Nhận +%.0f từ %s", transferAmount, fromAccNo));
+        return transaction;
     }
 
-    /**
-     * Nạp tiền — debit-free, chỉ cộng tiền + log + notify.
-     */
-    public void deposit(String accountNumber, double amount) {
-        Account acc = accountService.findAccount(accountNumber);
-        if (acc == null) {
-            System.out.println("  [Facade] Không tìm thấy tài khoản " + accountNumber);
-            return;
+    public Transaction undoLastTransfer() {
+        if (!(commandHistory.peekLast() instanceof TransferCommand command)) {
+            throw new IllegalStateException("Không có chuyển khoản nào để hoàn tác.");
         }
-        acc.deposit(amount);
-        transactionService.logTransaction("SYSTEM", accountNumber, amount, 0, "Nạp tiền");
-        notificationService.notifyAccountEvent(acc,
-                String.format("Nạp tiền +%.2f. Số dư: %.2f", amount, acc.getBalance()));
-    }
-
-    /**
-     * Rút tiền — tính phí + debit + log + notify.
-     */
-    public void withdraw(String accountNumber, double amount) {
-        Account acc = accountService.findAccount(accountNumber);
-        if (acc == null) {
-            System.out.println("  [Facade] Không tìm thấy tài khoản " + accountNumber);
-            return;
+        if (!commandHistory.undoLast()) {
+            throw new IllegalStateException("Tài khoản nhận không đủ số dư để hoàn tác.");
         }
-        double fee = acc.getFeeStrategy().calculateFee(amount);
-        System.out.printf("  [Facade] Phí rút tiền (%s): %.2f%n", acc.getFeeStrategy().getName(), fee);
+        String originalId = command.getTransactionId();
+        Transaction reversal = transactionService.logTransaction(
+                command.getToAccount().getAccountNumber(),
+                command.getFromAccount().getAccountNumber(),
+                command.getAmount(), 0,
+                String.format("Hoàn tác %s; hoàn phí %.0f VND", originalId, command.getFee()),
+                originalId);
+        notificationService.notifyAccountEvent(command.getFromAccount(),
+                "Hoàn tác chuyển khoản " + originalId);
+        notificationService.notifyAccountEvent(command.getToAccount(),
+                "Hoàn tác chuyển khoản " + originalId);
+        return reversal;
+    }
 
-        double total = amount + fee;
-        if (acc.getBalance() < total) {
-            System.out.println("  [Facade] Số dư không đủ.");
-            return;
+    public Transaction deposit(String accountNumber, double amount) {
+        Account account = requireAccount(accountNumber);
+        if (account.getStatus() == AccountStatus.CLOSED || account.getStatus() == AccountStatus.SUSPENDED) {
+            throw new IllegalStateException("Tài khoản không thể nhận tiền.");
         }
-        acc.withdraw(amount);
-        if (fee > 0) {
-            acc.setBalance(acc.getBalance() - fee);
+        double depositAmount = Money.positive(amount);
+        account.deposit(depositAmount);
+        Transaction transaction = transactionService.logTransaction("SYSTEM", accountNumber,
+                depositAmount, 0, "Nạp tiền");
+        notificationService.notifyAccountEvent(account,
+                String.format("Nạp tiền +%.0f. Số dư: %.0f", depositAmount, account.getBalance()));
+        return transaction;
+    }
+
+    public Transaction withdraw(String accountNumber, double amount) {
+        Account account = requireAccount(accountNumber);
+        requireOutgoingAccount(account);
+        double withdrawalAmount = Money.positive(amount);
+        double fee = Money.nonNegative(account.getFeeStrategy().calculateFee(withdrawalAmount));
+        double total = Money.add(withdrawalAmount, fee);
+        if (account.getBalance() < total) {
+            throw new IllegalStateException("Số dư không đủ để rút tiền và trả phí.");
         }
-        transactionService.logTransaction(accountNumber, "CASH", amount, fee, "Rút tiền");
-        notificationService.notifyAccountEvent(acc,
-                String.format("Rút tiền -%.2f (phí %.2f). Số dư: %.2f", amount, fee, acc.getBalance()));
+        account.withdraw(total);
+        Transaction transaction = transactionService.logTransaction(accountNumber, "CASH",
+                withdrawalAmount, fee, "Rút tiền");
+        notificationService.notifyAccountEvent(account,
+                String.format("Rút tiền -%.0f (phí %.0f). Số dư: %.0f",
+                        withdrawalAmount, fee, account.getBalance()));
+        return transaction;
     }
 
-    // ── Convenience accessors ───────────────────────────────
-
-    public AccountService getAccountService() {
-        return accountService;
+    private Account requireAccount(String accountNumber) {
+        Account account = accountService.findAccount(accountNumber);
+        if (account == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản " + accountNumber);
+        }
+        return account;
     }
 
-    public TransactionService getTransactionService() {
-        return transactionService;
+    private void requireOutgoingAccount(Account account) {
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new IllegalStateException("Tài khoản nguồn không ở trạng thái hoạt động.");
+        }
     }
 
-    public NotificationService getNotificationService() {
-        return notificationService;
-    }
+    public AccountService getAccountService() { return accountService; }
+    public TransactionService getTransactionService() { return transactionService; }
+    public NotificationService getNotificationService() { return notificationService; }
+    public TransactionHistory getCommandHistory() { return commandHistory; }
 }
