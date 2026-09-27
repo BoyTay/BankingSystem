@@ -1,0 +1,27 @@
+name: vietbank
+
+services:
+  gui:
+    build: .
+    image: vietbank:local
+    init: true
+    command: ["gui"]
+    ports:
+      - "127.0.0.1:6080:6080"
+    volumes:
+      - banking-data:/data
+    shm_size: "256m"
+
+  cli:
+    build: .
+    image: vietbank:local
+    init: true
+    profiles: ["cli"]
+    command: ["cli"]
+    stdin_open: true
+    tty: true
+    volumes:
+      - banking-data:/data
+
+volumes:
+  banking-data:
