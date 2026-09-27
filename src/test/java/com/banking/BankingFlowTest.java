@@ -20,14 +20,22 @@ import com.banking.service.AccountService;
 import com.banking.service.NotificationService;
 import com.banking.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.Files;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class BankingFlowTest {
+    @BeforeAll
+    static void useIsolatedDatabase() throws IOException {
+        System.setProperty("banking.data.file", Files.createTempDirectory("banking-flow-")
+                .resolve("banking.db").toString());
+    }
     private AccountService accounts;
     private TransactionService transactions;
     private TransactionHistory commands;
@@ -150,6 +158,38 @@ class BankingFlowTest {
         assertFalse(commands.executeCommand(command));
         assertTrue(commands.isEmpty());
         assertFalse(commands.undoLast());
+    }
+
+    @Test
+    void failedLedgerWriteRestoresBalancesAndUndoStack() {
+        TransactionService failing = new TransactionService() {
+            @Override
+            public Transaction logTransaction(String from, String to, double amount,
+                                              double fee, String description, String related) {
+                throw new IllegalStateException("Disk full");
+            }
+        };
+        BankingFacade broken = new BankingFacade(accounts, failing, new NotificationService(), commands);
+        assertThrows(IllegalStateException.class, () -> broken.transfer(
+                source.getAccountNumber(), target.getAccountNumber(), 1_000, "Fail"));
+        assertEquals(10_000, source.getBalance());
+        assertEquals(0, target.getBalance());
+        assertTrue(commands.isEmpty());
+    }
+
+    @Test
+    void undoHistoryCanBeRebuiltFromSavedLedger() {
+        Transaction original = facade.transfer(source.getAccountNumber(), target.getAccountNumber(),
+                2_000, "Before restart");
+        TransactionHistory restored = new TransactionHistory();
+        restored.restoreFromLedger(List.of(original), accounts);
+        assertEquals(1, restored.size());
+        BankingFacade restarted = new BankingFacade(accounts, transactions, new NotificationService(), restored);
+        Transaction reversal = restarted.undoLastTransfer();
+        assertEquals(original.getId(), reversal.getRelatedTransactionId());
+        TransactionHistory afterUndo = new TransactionHistory();
+        afterUndo.restoreFromLedger(List.of(original, reversal), accounts);
+        assertTrue(afterUndo.isEmpty());
     }
 
     @Test

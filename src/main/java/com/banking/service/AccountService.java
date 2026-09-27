@@ -17,6 +17,13 @@ public class AccountService {
     private final DatabaseManager db = DatabaseManager.getInstance();
     private static final AtomicInteger accountCounter = new AtomicInteger(1000);
 
+    public AccountService() {
+        db.getAllAccounts().stream().map(Account::getAccountNumber)
+                .filter(number -> number.matches("ACC[0-9]+"))
+                .mapToInt(number -> Integer.parseInt(number.substring(3)))
+                .max().ifPresent(max -> accountCounter.accumulateAndGet(max, Math::max));
+    }
+
     /**
      * Tạo tài khoản mới bằng Builder pattern.
      */
@@ -69,7 +76,14 @@ public class AccountService {
             System.out.println("  Không tìm thấy tài khoản " + accountNumber);
             return;
         }
+        AccountStatus previous = acc.getStatus();
         acc.setState(new LockedState());
+        try {
+            db.saveAccount(acc);
+        } catch (RuntimeException failure) {
+            acc.setState(previous == AccountStatus.LOCKED ? new LockedState() : new ActiveState());
+            throw failure;
+        }
         System.out.printf("  🔒 Tài khoản %s đã bị KHÓA.%n", accountNumber);
     }
 
@@ -82,7 +96,14 @@ public class AccountService {
             System.out.println("  Không tìm thấy tài khoản " + accountNumber);
             return;
         }
+        AccountStatus previous = acc.getStatus();
         acc.setState(new ActiveState());
+        try {
+            db.saveAccount(acc);
+        } catch (RuntimeException failure) {
+            acc.setState(previous == AccountStatus.LOCKED ? new LockedState() : new ActiveState());
+            throw failure;
+        }
         System.out.printf("  🔓 Tài khoản %s đã được MỞ KHÓA.%n", accountNumber);
     }
 }

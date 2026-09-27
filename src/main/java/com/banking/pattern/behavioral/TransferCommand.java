@@ -73,6 +73,20 @@ public class TransferCommand implements Command {
     }
 
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+
+    public static TransferCommand fromRecorded(Account from, Account to, double amount,
+                                                double fee, String transactionId) {
+        TransferCommand command = new TransferCommand(from, to, amount, fee);
+        command.executed = true;
+        command.transactionId = transactionId;
+        return command;
+    }
+
+    public void restoreAfterFailedUndo(double sourceBalance, double targetBalance) {
+        fromAccount.setBalance(sourceBalance);
+        toAccount.setBalance(targetBalance);
+        executed = true;
+    }
     public String getTransactionId() { return transactionId; }
     public Account getFromAccount() { return fromAccount; }
     public Account getToAccount() { return toAccount; }

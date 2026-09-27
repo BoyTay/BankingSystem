@@ -47,12 +47,22 @@ public class BankingFacade {
         }
 
         TransferCommand command = new TransferCommand(from, to, transferAmount, fee);
+        double oldSourceBalance = from.getBalance();
+        double oldTargetBalance = to.getBalance();
         if (!commandHistory.executeCommand(command)) {
             throw new IllegalStateException("Không thể thực hiện chuyển khoản.");
         }
         String detail = description == null || description.isBlank() ? "Chuyển khoản" : description.trim();
-        Transaction transaction = transactionService.logTransaction(fromAccNo, toAccNo,
-                transferAmount, fee, detail);
+        Transaction transaction;
+        try {
+            transaction = transactionService.logTransaction(fromAccNo, toAccNo,
+                    transferAmount, fee, detail);
+        } catch (RuntimeException failure) {
+            from.setBalance(oldSourceBalance);
+            to.setBalance(oldTargetBalance);
+            commandHistory.discardLast();
+            throw failure;
+        }
         command.setTransactionId(transaction.getId());
         notificationService.notifyAccountEvent(from,
                 String.format("Chuyển -%.0f đến %s (phí %.0f)", transferAmount, toAccNo, fee));
@@ -65,16 +75,25 @@ public class BankingFacade {
         if (!(commandHistory.peekLast() instanceof TransferCommand command)) {
             throw new IllegalStateException("Không có chuyển khoản nào để hoàn tác.");
         }
+        double oldSourceBalance = command.getFromAccount().getBalance();
+        double oldTargetBalance = command.getToAccount().getBalance();
         if (!commandHistory.undoLast()) {
             throw new IllegalStateException("Tài khoản nhận không đủ số dư để hoàn tác.");
         }
         String originalId = command.getTransactionId();
-        Transaction reversal = transactionService.logTransaction(
-                command.getToAccount().getAccountNumber(),
-                command.getFromAccount().getAccountNumber(),
-                command.getAmount(), 0,
-                String.format("Hoàn tác %s; hoàn phí %.0f VND", originalId, command.getFee()),
-                originalId);
+        Transaction reversal;
+        try {
+            reversal = transactionService.logTransaction(
+                    command.getToAccount().getAccountNumber(),
+                    command.getFromAccount().getAccountNumber(),
+                    command.getAmount(), 0,
+                    String.format("Hoàn tác %s; hoàn phí %.0f VND", originalId, command.getFee()),
+                    originalId);
+        } catch (RuntimeException failure) {
+            command.restoreAfterFailedUndo(oldSourceBalance, oldTargetBalance);
+            commandHistory.restoreRecorded(command);
+            throw failure;
+        }
         notificationService.notifyAccountEvent(command.getFromAccount(),
                 "Hoàn tác chuyển khoản " + originalId);
         notificationService.notifyAccountEvent(command.getToAccount(),
@@ -88,9 +107,16 @@ public class BankingFacade {
             throw new IllegalStateException("Tài khoản không thể nhận tiền.");
         }
         double depositAmount = Money.positive(amount);
+        double oldBalance = account.getBalance();
         account.deposit(depositAmount);
-        Transaction transaction = transactionService.logTransaction("SYSTEM", accountNumber,
-                depositAmount, 0, "Nạp tiền");
+        Transaction transaction;
+        try {
+            transaction = transactionService.logTransaction("SYSTEM", accountNumber,
+                    depositAmount, 0, "Nạp tiền");
+        } catch (RuntimeException failure) {
+            account.setBalance(oldBalance);
+            throw failure;
+        }
         notificationService.notifyAccountEvent(account,
                 String.format("Nạp tiền +%.0f. Số dư: %.0f", depositAmount, account.getBalance()));
         return transaction;
@@ -105,9 +131,16 @@ public class BankingFacade {
         if (account.getBalance() < total) {
             throw new IllegalStateException("Số dư không đủ để rút tiền và trả phí.");
         }
+        double oldBalance = account.getBalance();
         account.withdraw(total);
-        Transaction transaction = transactionService.logTransaction(accountNumber, "CASH",
-                withdrawalAmount, fee, "Rút tiền");
+        Transaction transaction;
+        try {
+            transaction = transactionService.logTransaction(accountNumber, "CASH",
+                    withdrawalAmount, fee, "Rút tiền");
+        } catch (RuntimeException failure) {
+            account.setBalance(oldBalance);
+            throw failure;
+        }
         notificationService.notifyAccountEvent(account,
                 String.format("Rút tiền -%.0f (phí %.0f). Số dư: %.0f",
                         withdrawalAmount, fee, account.getBalance()));

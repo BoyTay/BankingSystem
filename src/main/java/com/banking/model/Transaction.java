@@ -27,6 +27,13 @@ public class Transaction {
 
     public Transaction(String id, String fromAccountNumber, String toAccountNumber,
                        double amount, double fee, String description, String relatedTransactionId) {
+        this(id, fromAccountNumber, toAccountNumber, amount, fee, description,
+                relatedTransactionId, LocalDateTime.now());
+    }
+
+    public Transaction(String id, String fromAccountNumber, String toAccountNumber,
+                       double amount, double fee, String description, String relatedTransactionId,
+                       LocalDateTime timestamp) {
         this.id = id;
         this.fromAccountNumber = fromAccountNumber;
         this.toAccountNumber = toAccountNumber;
@@ -34,7 +41,7 @@ public class Transaction {
         this.fee = Money.of(Money.nonNegative(fee));
         this.description = description;
         this.relatedTransactionId = relatedTransactionId;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = timestamp;
     }
 
     // ── Getters ──────────────────────────────────────────────

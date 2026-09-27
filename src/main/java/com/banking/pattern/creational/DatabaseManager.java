@@ -3,6 +3,7 @@ package com.banking.pattern.creational;
 
 import com.banking.model.Account;
 import com.banking.model.Transaction;
+import com.banking.persistence.SqliteStore;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -21,10 +22,14 @@ public class DatabaseManager {
     // ── In-memory storage ───────────────────────────────────
     private final Map<String, Account> accounts = new LinkedHashMap<>();
     private final List<Transaction> transactions = new ArrayList<>();
+    private final SqliteStore store;
 
     // ── Private constructor — ngăn tạo instance bên ngoài ──
     private DatabaseManager() {
-        System.out.println("[DatabaseManager] Singleton instance created (in-memory storage).");
+        store = new SqliteStore(SqliteStore.defaultPath());
+        for (Account account : store.loadAccounts()) accounts.put(account.getAccountNumber(), account);
+        transactions.addAll(store.loadTransactions());
+        System.out.println("[DatabaseManager] SQLite đã sẵn sàng; khôi phục " + accounts.size() + " tài khoản.");
     }
 
     public static DatabaseManager getInstance() {
@@ -34,6 +39,7 @@ public class DatabaseManager {
     // ── Account CRUD ────────────────────────────────────────
 
     public void saveAccount(Account account) {
+        store.saveAccount(account, !accounts.containsKey(account.getAccountNumber()));
         accounts.put(account.getAccountNumber(), account);
     }
 
@@ -52,6 +58,7 @@ public class DatabaseManager {
     // ── Transaction CRUD ────────────────────────────────────
 
     public void saveTransaction(Transaction tx) {
+        store.saveTransaction(new ArrayList<>(accounts.values()), tx);
         transactions.add(tx);
     }
 
