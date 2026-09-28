@@ -15,7 +15,19 @@ thuộc 3 nhóm: Creational, Structural, và Behavioral.
 
 ## 🚀 Cách chạy ứng dụng
 
-### Chạy toàn bộ bằng Docker
+### Ứng dụng desktop Windows (khuyến nghị)
+
+Máy dùng ứng dụng chỉ cần Windows. Trên máy đóng gói cần JDK 17+ có `jpackage` trong `PATH`. Chạy một lần trong PowerShell tại thư mục dự án:
+
+```powershell
+.\build-desktop.ps1
+```
+
+Mở `target\desktop\VietBank\VietBank.exe`. Có thể chép **cả thư mục** `target\desktop\VietBank` sang máy Windows khác; máy nhận không cần cài JDK, Maven hoặc Docker. Nếu PowerShell chặn script, chạy `powershell -ExecutionPolicy Bypass -File .\build-desktop.ps1`.
+
+Khi đang phát triển, có thể chạy trực tiếp bằng `run-gui.bat` (cần JDK). Dữ liệu desktop lưu tại `%USERPROFILE%\.vietbank\banking.db` và không nằm trong Docker volume. Nếu đã nhập dữ liệu qua Docker, hãy sao lưu dữ liệu đó trước khi chuyển cách chạy.
+
+### Chạy bằng Docker và noVNC (tùy chọn)
 
 Cần Docker Desktop (Linux containers) hoặc Docker Engine có Compose. GUI được hiển thị trong trình duyệt nhờ noVNC; máy chạy Docker không cần cài JDK hay Maven.
 
