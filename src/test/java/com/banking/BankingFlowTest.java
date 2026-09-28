@@ -200,4 +200,42 @@ class BankingFlowTest {
         assertEquals(500, new TieredFeeStrategy().calculateFee(1_000_001), 0.001);
         assertSame(DatabaseManager.getInstance(), DatabaseManager.getInstance());
     }
+
+    @Test
+    void uiUtilsFormatVndCompactWorks() {
+        assertEquals("1.5M VND", com.banking.ui.UiUtils.formatVndCompact(1_500_000));
+        assertEquals("2.0B VND", com.banking.ui.UiUtils.formatVndCompact(2_000_000_000));
+        assertEquals("500K VND", com.banking.ui.UiUtils.formatVndCompact(500_000));
+        assertTrue(com.banking.ui.UiUtils.formatVnd(10_000).contains("10,000"));
+    }
+
+    @Test
+    void humanizeErrorTranslatesExceptionsIntoFriendlyMessages() {
+        String secErr = com.banking.ui.UiUtils.humanizeError(new SecurityException("READONLY role denied"));
+        assertTrue(secErr.contains("Quyền truy cập bị từ chối") && secErr.contains("READONLY"));
+
+        String balErr = com.banking.ui.UiUtils.humanizeError(new IllegalStateException("Số dư không đủ để chuyển tiền và trả phí."));
+        assertTrue(balErr.contains("Số dư tài khoản không đủ"));
+
+        String lockErr = com.banking.ui.UiUtils.humanizeError(new IllegalStateException("Tài khoản đang bị KHÓA"));
+        assertTrue(lockErr.contains("Tài khoản đang tạm khóa"));
+
+        String amtErr = com.banking.ui.UiUtils.humanizeError(new IllegalArgumentException("positive amount required"));
+        assertTrue(amtErr.contains("Số tiền không hợp lệ"));
+    }
+
+    @Test
+    void toastNotificationTypesExist() {
+        assertEquals(4, com.banking.ui.ToastNotification.Type.values().length);
+    }
+
+    @Test
+    void novaBankDashboardResourcesExist() {
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank_dashboard.fxml"), "Dashboard FXML layout file should exist in classpath");
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank_login.fxml"), "Login FXML layout file should exist in classpath");
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank_transfer.fxml"), "Transfer FXML layout file should exist in classpath");
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank_history.fxml"), "History FXML layout file should exist in classpath");
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank_accounts.fxml"), "Accounts FXML layout file should exist in classpath");
+        assertNotNull(getClass().getResource("/com/banking/ui/novabank.css"), "CSS stylesheet should exist in classpath");
+    }
 }

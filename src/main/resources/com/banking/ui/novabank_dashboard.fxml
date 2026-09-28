@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.AreaChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.banking.ui.NovaBankDashboardController"
+            prefHeight="900.0" prefWidth="1440.0"
+            stylesheets="@novabank.css" styleClass="main-window">
+
+    <!-- Sidebar is now managed centrally by NovaBankShell.java -->
+
+    <!-- ==================== 2. MAIN WORKSPACE ==================== -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <VBox spacing="24.0" styleClass="content-container">
+                <padding>
+                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                </padding>
+
+                <!-- HEADER -->
+                <HBox alignment="CENTER_LEFT">
+                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                        <Label fx:id="lblGreeting" text="Xin chao" styleClass="header-greeting"/>
+                        <Label text="Here's what's happening with your money today." styleClass="header-subtitle"/>
+                    </VBox>
+
+                    <!-- Right Controls (Search, Notification + User Profile Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="16.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0">
+                            <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
+                            <TextField promptText="Search..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <StackPane styleClass="icon-btn-round" style="-fx-pref-width: 42px; -fx-pref-height: 42px; -fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 50%; -fx-background-radius: 50%;">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="svg-icon" style="-fx-stroke: #1E293B;"/>
+                        </StackPane>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="user-profile-pill">
+                            <StackPane styleClass="avatar-circle">
+                                <Label fx:id="lblProfileAvatar" text="U" styleClass="avatar-text"/>
+                            </StackPane>
+                            <VBox spacing="2.0">
+                                <Label fx:id="lblProfileName" text="User" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Role" styleClass="user-tier"/>
+                            </VBox>
+                            <Label text="▾" styleClass="user-chevron"/>
+                        </HBox>
+                    </HBox>
+                </HBox>
+
+                <!-- ROW 1: Total Balance Card (Navy Gradient) + Quick Actions -->
+                <HBox spacing="20.0">
+                    <!-- Total Balance Card -->
+                    <VBox styleClass="balance-card" HBox.hgrow="ALWAYS" prefHeight="175.0" spacing="16.0">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Total balance" styleClass="balance-title" HBox.hgrow="ALWAYS"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnToggleBalance" styleClass="icon-btn-ghost-small" onAction="#toggleBalanceVisibility"><graphic><SVGPath fx:id="svgBalanceEye" content="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" style="-fx-stroke: #94A3B8; -fx-fill: transparent; -fx-stroke-width: 2px;"/></graphic></Button>
+                        </HBox>
+                        <Label fx:id="lblTotalBalance" text="0 VND" styleClass="balance-amount"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <HBox fx:id="boxTrendBadge" styleClass="trend-badge" alignment="CENTER">
+                                <Label fx:id="lblTrendBadge" text="↗ 0.0%" style="-fx-text-fill: #00D084; -fx-font-weight: 700;"/>
+                            </HBox>
+                            <Label text="vs last month" styleClass="trend-text"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Quick Actions Card -->
+                    <VBox styleClass="card" prefWidth="440.0" spacing="14.0">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Quick actions" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Move money in seconds" styleClass="card-hint"/>
+                        </HBox>
+                        <HBox spacing="12.0" alignment="CENTER">
+                            <!-- Action 1: Transfer -->
+                            <VBox styleClass="quick-action-btn" HBox.hgrow="ALWAYS" alignment="CENTER" onMouseClicked="#handleQuickTransfer">
+                                <StackPane styleClass="action-icon-pill,icon-green">
+                                    <SVGPath styleClass="svg-icon" content="M 7 17 L 17 7 M 17 7 L 11 7 M 17 7 L 17 13"/>
+                                </StackPane>
+                                <Label text="Transfer" styleClass="action-title"/>
+                                <Label text="Send money" styleClass="action-sub"/>
+                            </VBox>
+                            <!-- Action 2: Top up -->
+                            <VBox styleClass="quick-action-btn" HBox.hgrow="ALWAYS" alignment="CENTER" onMouseClicked="#handleQuickTopUp">
+                                <StackPane styleClass="action-icon-pill,icon-blue">
+                                    <SVGPath styleClass="svg-icon" content="M 12 5 L 12 19 M 5 12 L 19 12"/>
+                                </StackPane>
+                                <Label text="Top up" styleClass="action-title"/>
+                                <Label text="Add funds" styleClass="action-sub"/>
+                            </VBox>
+                            <!-- Action 3: Pay bill -->
+                            <VBox styleClass="quick-action-btn" HBox.hgrow="ALWAYS" alignment="CENTER" onMouseClicked="#handleQuickPayBill">
+                                <StackPane styleClass="action-icon-pill,icon-amber">
+                                    <SVGPath styleClass="svg-icon" content="M 7 3 L 13 3 L 17 7 L 17 21 L 7 21 Z M 13 3 L 13 7 L 17 7 M 10 12 L 14 12 M 10 16 L 14 16"/>
+                                </StackPane>
+                                <Label text="History" styleClass="action-title"/>
+                                <Label text="View ledger" styleClass="action-sub"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- ROW 2: Balance Trend LineChart (60%) + Account Distribution (40%) -->
+                <HBox spacing="20.0">
+                    <!-- Line Chart Card -->
+                    <VBox styleClass="card" HBox.hgrow="ALWAYS" prefHeight="330.0" spacing="10.0">
+                        <HBox alignment="CENTER_LEFT">
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <Label text="Balance trend" styleClass="card-title"/>
+                                <Label text="Your combined balance over the last 6 months" styleClass="card-hint"/>
+                            </VBox>
+                            <ComboBox fx:id="cbTimeRange" promptText="6 months" styleClass="time-filter-combo"/>
+                        </HBox>
+                        <AreaChart fx:id="lineChartBalance" legendVisible="false" verticalGridLinesVisible="false"
+                                   createSymbols="false" VBox.vgrow="ALWAYS">
+                            <xAxis>
+                                <CategoryAxis fx:id="axisMonths" side="BOTTOM"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis fx:id="axisAmount" side="LEFT"/>
+                            </yAxis>
+                        </AreaChart>
+                    </VBox>
+
+                    <!-- Donut / Pie Chart Card -->
+                    <VBox styleClass="card" prefWidth="400.0" prefHeight="330.0" spacing="12.0">
+                        <VBox spacing="2.0">
+                            <Label text="Account distribution" styleClass="card-title"/>
+                            <Label text="Across all Nova accounts" styleClass="card-hint"/>
+                        </VBox>
+
+                        <HBox alignment="CENTER" spacing="16.0" VBox.vgrow="ALWAYS">
+                            <!-- Donut Chart with Center Text -->
+                            <StackPane prefWidth="180.0" prefHeight="180.0">
+                                <PieChart fx:id="pieChartDistribution" labelsVisible="false" legendVisible="false"/>
+                                <Circle radius="68.0" fill="WHITE"/>
+                                <VBox alignment="CENTER">
+                        <Label fx:id="lblDonutTotal" text="0 VND" styleClass="donut-center-value"/>
+                                    <Label text="VND total" styleClass="donut-center-label"/>
+                                </VBox>
+                            </StackPane>
+
+                            <!-- Legend Breakdown -->
+                            <VBox spacing="14.0" alignment="CENTER_LEFT" VBox.vgrow="ALWAYS">
+                                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                                    <Circle radius="5.0" fill="#00C476"/>
+                                    <VBox>
+                                        <Label text="Standard" styleClass="legend-name"/>
+                                        <Label fx:id="lblStandardAmount" text="0 VND" styleClass="legend-value"/>
+                                    </VBox>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblStandardPct" text="57%" styleClass="legend-pct"/>
+                                </HBox>
+                                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                                    <Circle radius="5.0" fill="#2563EB"/>
+                                    <VBox>
+                                        <Label text="Savings" styleClass="legend-name"/>
+                                        <Label fx:id="lblSavingsAmount" text="0 VND" styleClass="legend-value"/>
+                                    </VBox>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblSavingsPct" text="34%" styleClass="legend-pct"/>
+                                </HBox>
+                                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                                    <Circle radius="5.0" fill="#F59E0B"/>
+                                    <VBox>
+                                        <Label text="Premium" styleClass="legend-name"/>
+                                        <Label fx:id="lblPremiumAmount" text="0 VND" styleClass="legend-value"/>
+                                    </VBox>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblPremiumPct" text="9%" styleClass="legend-pct"/>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- ROW 3: Recent Activity -->
+                <VBox styleClass="card" spacing="16.0">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Recent activity" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Hyperlink text="View all transactions" styleClass="link-green" onAction="#handleViewAllTransactions"/>
+                    </HBox>
+
+                    <!-- Transaction Cards Container -->
+                    <HBox fx:id="boxRecentTransactions" spacing="16.0"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>

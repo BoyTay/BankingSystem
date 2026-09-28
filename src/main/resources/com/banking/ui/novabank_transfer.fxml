@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.shape.SVGPath?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.banking.ui.NovaBankTransferController"
+            prefHeight="920.0" prefWidth="1440.0"
+            stylesheets="@novabank.css" styleClass="main-window">
+
+
+    <!-- ==================== 2. MAIN WORKSPACE ==================== -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <VBox spacing="24.0" styleClass="content-container">
+                <padding>
+                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                </padding>
+
+                <!-- HEADER -->
+                <HBox alignment="CENTER_LEFT">
+                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                        <Label text="Transfer &amp; payment" styleClass="header-greeting"/>
+                        <Label text="Send money securely to saved or new recipients." styleClass="header-subtitle"/>
+                    </VBox>
+
+                    <!-- Right Controls (Search, Notification + User Profile Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="16.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0">
+                            <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
+                            <TextField promptText="Search..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <StackPane styleClass="icon-btn-round" style="-fx-pref-width: 42px; -fx-pref-height: 42px; -fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 50%; -fx-background-radius: 50%;">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="svg-icon" style="-fx-stroke: #1E293B;"/>
+                        </StackPane>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="user-profile-pill">
+                            <StackPane styleClass="avatar-circle">
+                                <Label fx:id="lblProfileAvatar" text="U" styleClass="avatar-text"/>
+                            </StackPane>
+                            <VBox spacing="2.0">
+                                <Label fx:id="lblProfileName" text="User" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Role" styleClass="user-tier"/>
+                            </VBox>
+                            <Label text="▾" styleClass="user-chevron"/>
+                        </HBox>
+                    </HBox>
+                </HBox>
+
+                <!-- STEP PROGRESS WIZARD BAR -->
+                <HBox styleClass="wizard-card" alignment="CENTER" spacing="16.0">
+                    <padding>
+                        <Insets top="18.0" right="32.0" bottom="18.0" left="32.0"/>
+                    </padding>
+
+                    <!-- Step 1: Select account -->
+                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                        <StackPane styleClass="step-icon-completed">
+                            <Label text="1" styleClass="step-check-text"/>
+                        </StackPane>
+                        <VBox spacing="2.0">
+                            <Label text="Select account" styleClass="step-title-completed"/>
+                            <Label text="From &amp; recipient" styleClass="step-sub"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Connector Line 1 (Green) -->
+                    <Region styleClass="step-line-completed" HBox.hgrow="ALWAYS"/>
+
+                    <!-- Step 2: Enter amount (Active) -->
+                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                        <StackPane styleClass="step-icon-active">
+                            <Label text="2" styleClass="step-num-active"/>
+                        </StackPane>
+                        <VBox spacing="2.0">
+                            <Label text="Enter amount" styleClass="step-title-active"/>
+                            <Label text="Amount &amp; reference" styleClass="step-sub"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Connector Line 2 (Gray) -->
+                    <Region fx:id="stepLine2" styleClass="step-line-pending" HBox.hgrow="ALWAYS"/>
+
+                    <!-- Step 3: Confirm -->
+                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                        <StackPane fx:id="stepIcon3" styleClass="step-icon-pending">
+                            <Label fx:id="stepNum3" text="3" styleClass="step-num-pending"/>
+                        </StackPane>
+                        <VBox spacing="2.0">
+                            <Label fx:id="stepTitle3" text="Confirm" styleClass="step-title-pending"/>
+                            <Label text="Xác nhận ngay" styleClass="step-sub"/>
+                        </VBox>
+                    </HBox>
+                </HBox>
+
+                <!-- MAIN WORKSPACE: Form (65%) + Summary Card (35%) -->
+                <HBox spacing="24.0">
+
+                    <!-- LEFT COLUMN: Transfer Form -->
+                    <VBox styleClass="card" HBox.hgrow="ALWAYS" spacing="20.0">
+                        <VBox spacing="4.0">
+                            <Label text="How much would you like to send?" styleClass="transfer-form-headline"/>
+                            <Label text="Transfers usually arrive within a few minutes." styleClass="card-hint"/>
+                        </VBox>
+
+                        <!-- Group 1: From Account -->
+                        <VBox spacing="8.0">
+                            <Label text="From account" styleClass="form-field-label"/>
+                            <ComboBox fx:id="cbFromAccount" maxWidth="Infinity" styleClass="account-selector-combo"/>
+                        </VBox>
+
+                        <!-- Group 2: To Recipient -->
+                        <VBox spacing="8.0">
+                            <HBox alignment="CENTER_LEFT">
+                                <Label text="To recipient" styleClass="form-field-label" HBox.hgrow="ALWAYS"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="btnChangeRecipient" text="Change" styleClass="btn-text-action" onAction="#handleChangeRecipient"/>
+                            </HBox>
+
+                            <!-- Recipient Preview Card -->
+                            <HBox styleClass="recipient-card" alignment="CENTER_LEFT" spacing="14.0">
+                                <StackPane styleClass="recipient-avatar">
+                                    <Label fx:id="lblRecipientAvatar" text="?" styleClass="recipient-avatar-text"/>
+                                </StackPane>
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <Label fx:id="lblRecipientName" text="Chọn tài khoản nhận" styleClass="recipient-name"/>
+                                    <Label fx:id="lblRecipientDetails" text="" styleClass="recipient-meta"/>
+                                </VBox>
+                                <ComboBox fx:id="cbToAccount" promptText="Select recipient" styleClass="combo-compact"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Group 3: You send & They receive -->
+                        <HBox spacing="14.0" alignment="CENTER">
+                            <!-- You Send -->
+                            <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                                <Label text="You send" styleClass="form-field-label"/>
+                                <HBox alignment="CENTER_LEFT" styleClass="amount-input-box">
+                                    <TextField fx:id="txtSendAmount" promptText="0" styleClass="amount-field" HBox.hgrow="ALWAYS"/>
+                                    <Label text="VND" styleClass="currency-badge"/>
+                                </HBox>
+                                <HBox alignment="CENTER_LEFT" spacing="4">
+                                    <SVGPath content="M3 10h18V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2v-4M3 10l4-4m-4 4l4 4" style="-fx-fill: transparent; -fx-stroke: #10B981; -fx-stroke-width: 1.5; -fx-scale-x: 0.55; -fx-scale-y: 0.55;"/>
+                                    <Label fx:id="lblAvailableBalance" text="Số dư khả dụng: 0 VND" styleClass="balance-indicator"/>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Swap Button Icon -->
+                            <StackPane styleClass="swap-icon-box">
+                                <Label text="⇄" styleClass="swap-icon"/>
+                            </StackPane>
+
+                            <!-- They Receive -->
+                            <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                                <Label text="They receive" styleClass="form-field-label"/>
+                                <HBox alignment="CENTER_LEFT" styleClass="amount-input-box,amount-box-readonly">
+                                    <TextField fx:id="txtReceiveAmount" text="0 VND" editable="false" styleClass="amount-field" HBox.hgrow="ALWAYS"/>
+                                    <Label text="VND" styleClass="currency-badge"/>
+                                </HBox>
+                                <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                    <Label text="⏱" styleClass="timer-icon"/>
+                                    <Label fx:id="lblRateLockedTimer" text="Chuyển cùng đơn vị tiền" styleClass="timer-indicator"/>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Group 4: Payment Reference -->
+                        <VBox spacing="6.0">
+                            <Label text="Payment reference" styleClass="form-field-label"/>
+                            <HBox alignment="CENTER_LEFT" styleClass="input-container">
+                                <Label text="💬" styleClass="input-icon"/>
+                                <TextField fx:id="txtReference" promptText="Nội dung chuyển khoản" styleClass="clean-text-input" HBox.hgrow="ALWAYS"/>
+                            </HBox>
+                            <Label text="This will appear on both account statements." styleClass="card-hint"/>
+                        </VBox>
+
+                        <!-- Error Banner (Real-time validation) -->
+                        <HBox fx:id="errorBanner" styleClass="transfer-error-box" visible="false" managed="false" alignment="CENTER_LEFT" spacing="12.0">
+                            <StackPane>
+                                <SVGPath content="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" style="-fx-stroke: #EF4444; -fx-stroke-width: 2; -fx-fill: transparent; -fx-stroke-linecap: round; -fx-stroke-linejoin: round;"/>
+                            </StackPane>
+                            <Label fx:id="lblValidationError" text="" wrapText="true" styleClass="transfer-error-text" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <!-- Action Row: Save Recipient & Buttons -->
+                        <HBox alignment="CENTER_LEFT" spacing="16.0">
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="Back" styleClass="btn-secondary-flat" onAction="#handleNavOverview"/>
+                            <Button fx:id="btnReviewTransfer" text="Xác nhận chuyển khoản  →" styleClass="btn-signin-premium" onAction="#handleReviewTransfer"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- RIGHT COLUMN: Transfer Summary & Rate Protection -->
+                    <VBox prefWidth="380.0" spacing="20.0">
+
+                        <!-- Summary Card - Premium Redesign -->
+                        <VBox styleClass="summary-card-premium" spacing="0">
+
+                            <!-- Summary Header with gradient -->
+                            <HBox styleClass="summary-header-gradient" alignment="CENTER_LEFT" spacing="12.0">
+                                <padding><Insets top="18" right="20" bottom="18" left="20"/></padding>
+                                <StackPane styleClass="summary-header-icon">
+                                    <SVGPath content="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" style="-fx-fill: transparent; -fx-stroke: white; -fx-stroke-width: 1.8;"/>
+                                </StackPane>
+                                <VBox spacing="2">
+                                    <Label text="Tóm tắt giao dịch" styleClass="summary-header-title"/>
+                                    <Label text="Cập nhật tự động theo số tiền nhập" styleClass="summary-header-sub"/>
+                                </VBox>
+                            </HBox>
+
+                            <!-- Summary Body -->
+                            <VBox styleClass="summary-body" spacing="0">
+                                <padding><Insets top="16" right="20" bottom="8" left="20"/></padding>
+
+                                <!-- Detail Rows -->
+                                <HBox alignment="CENTER_LEFT" styleClass="summary-row">
+                                    <padding><Insets top="10" right="0" bottom="10" left="0"/></padding>
+                                    <SVGPath content="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.4; -fx-scale-x: 0.7; -fx-scale-y: 0.7;"/>
+                                    <Label text="Số tiền chuyển" styleClass="summary-row-label"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblSummarySendAmount" text="0 VND" styleClass="summary-row-value"/>
+                                </HBox>
+
+                                <Separator styleClass="summary-separator"/>
+
+                                <HBox alignment="CENTER_LEFT" styleClass="summary-row">
+                                    <padding><Insets top="10" right="0" bottom="10" left="0"/></padding>
+                                    <SVGPath content="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.4; -fx-scale-x: 0.7; -fx-scale-y: 0.7;"/>
+                                    <Label text="Phí NovaBank" styleClass="summary-row-label"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblSummaryFee" text="0 VND" styleClass="summary-row-value"/>
+                                </HBox>
+
+                                <Separator styleClass="summary-separator"/>
+
+                                <HBox alignment="CENTER_LEFT" styleClass="summary-row">
+                                    <padding><Insets top="10" right="0" bottom="10" left="0"/></padding>
+                                    <SVGPath content="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.4; -fx-scale-x: 0.7; -fx-scale-y: 0.7;"/>
+                                    <Label text="Đơn vị tiền" styleClass="summary-row-label"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label text="VND → VND" styleClass="summary-row-value"/>
+                                </HBox>
+
+                                <Separator styleClass="summary-separator"/>
+
+                                <HBox alignment="CENTER_LEFT" styleClass="summary-row">
+                                    <padding><Insets top="10" right="0" bottom="10" left="0"/></padding>
+                                    <SVGPath content="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.4; -fx-scale-x: 0.7; -fx-scale-y: 0.7;"/>
+                                    <Label text="Ghi nhận" styleClass="summary-row-label"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label text="Ngay lập tức" styleClass="summary-row-value-accent"/>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Total Amount - Highlighted -->
+                            <VBox styleClass="summary-total-box" alignment="CENTER" spacing="4">
+                                <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+                                <Label text="TỔNG THANH TOÁN" styleClass="summary-total-caption"/>
+                                <Label fx:id="lblSummaryTotal" text="0 VND" styleClass="summary-total-amount"/>
+                            </VBox>
+                        </VBox>
+
+                        <!-- Security Badge -->
+                        <HBox styleClass="security-badge" alignment="CENTER_LEFT" spacing="12.0">
+                            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+                            <StackPane styleClass="security-badge-icon">
+                                <SVGPath content="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" style="-fx-fill: transparent; -fx-stroke: #10B981; -fx-stroke-width: 2px;"/>
+                            </StackPane>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <Label text="Giao dịch được bảo mật" styleClass="security-badge-title"/>
+                                <Label text="Mã hoá SSL 256-bit · Xử lý nội bộ NovaBank" wrapText="true" styleClass="security-badge-desc"/>
+                            </VBox>
+                        </HBox>
+
+                    </VBox>
+
+                </HBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>
