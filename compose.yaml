@@ -6,6 +6,9 @@ services:
     image: vietbank:local
     init: true
     command: ["gui"]
+    environment:
+      VNC_WIDTH: ${VNC_WIDTH:-1280}
+      VNC_HEIGHT: ${VNC_HEIGHT:-800}
     ports:
       - "127.0.0.1:6080:6080"
     volumes:

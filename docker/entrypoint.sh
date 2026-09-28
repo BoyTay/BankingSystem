@@ -20,7 +20,9 @@ if [ "$mode" != 'gui' ]; then
 fi
 
 export DISPLAY=:99
-Xvfb :99 -screen 0 1280x800x24 -nolisten tcp &
+vnc_width="${VNC_WIDTH:-1280}"
+vnc_height="${VNC_HEIGHT:-800}"
+Xvfb :99 -screen 0 "${vnc_width}x${vnc_height}x24" -nolisten tcp &
 xvfb_pid=$!
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ -S /tmp/.X11-unix/X99 ] && break

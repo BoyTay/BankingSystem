@@ -23,7 +23,17 @@ Cần Docker Desktop (Linux containers) hoặc Docker Engine có Compose. GUI đ
 docker compose up --build -d gui
 ```
 
-Mở `http://localhost:6080/vnc.html?autoconnect=1&resize=scale` để dùng giao diện JavaFX. Cổng chỉ được mở trên `localhost` của máy chạy Docker.
+Mở `http://localhost:6080/vnc.html?autoconnect=1&resize=off&quality=9&view_clip=1` để dùng giao diện JavaFX rõ nét ở tỉ lệ 1:1. Nếu màn hình không vừa cửa sổ trình duyệt, noVNC sẽ có thanh cuộn. Cổng chỉ được mở trên `localhost` của máy chạy Docker.
+
+Màn hình Docker mặc định là 1280×800. Có thể đặt kích thước phù hợp với cửa sổ trình duyệt trước khi chạy, ví dụ trong PowerShell:
+
+```powershell
+$env:VNC_WIDTH = "1200"
+$env:VNC_HEIGHT = "760"
+docker compose up --build -d gui
+```
+
+Giữ mức zoom trình duyệt ở 100% để chữ không bị trình duyệt phóng lại. Trong noVNC, chọn **Settings → Scaling mode → None** nếu đã mở bằng liên kết cũ có `resize=scale`.
 
 Để chuyển sang menu CLI dùng cùng dữ liệu, dừng GUI trước rồi chạy:
 
