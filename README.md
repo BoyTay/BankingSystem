@@ -13,71 +13,19 @@ thuộc 3 nhóm: Creational, Structural, và Behavioral.
 - **Build tool**: Maven 3.9+ (hoặc dùng Maven Wrapper `mvnw` đi kèm)
 - Nếu `JAVA_HOME` chưa được đặt, các file `.bat` sẽ thử tìm JDK qua `javac` trong `PATH`.
 
-## 🚀 Cách chạy ứng dụng
+## 🚀 Chạy ứng dụng
 
-### Ứng dụng desktop Windows (khuyến nghị)
-
-Máy dùng ứng dụng chỉ cần Windows. Trên máy đóng gói cần JDK 17+ có `jpackage` trong `PATH`. Chạy một lần trong PowerShell tại thư mục dự án:
+Trên Windows, mở PowerShell trong thư mục dự án và dùng **một lệnh duy nhất**:
 
 ```powershell
-.\build-desktop.ps1
+.\run-gui.bat
 ```
 
-Mở `target\desktop\VietBank\VietBank.exe`. Có thể chép **cả thư mục** `target\desktop\VietBank` sang máy Windows khác; máy nhận không cần cài JDK, Maven hoặc Docker. Nếu PowerShell chặn script, chạy `powershell -ExecutionPolicy Bypass -File .\build-desktop.ps1`.
+Cần JDK 17+; script tự tìm JDK qua `javac` nếu chưa đặt `JAVA_HOME`. Lần đầu ứng dụng yêu cầu tạo quản trị viên. Dữ liệu lưu tại `%USERPROFILE%\.vietbank\banking.db`. Ứng dụng sẽ từ chối mở phiên thứ hai dùng cùng tệp dữ liệu; hãy đóng cửa sổ đang chạy trước khi mở lại.
 
-Khi đang phát triển, có thể chạy trực tiếp bằng `run-gui.bat` (cần JDK). Dữ liệu desktop lưu tại `%USERPROFILE%\.vietbank\banking.db` và không nằm trong Docker volume. Nếu đã nhập dữ liệu qua Docker, hãy sao lưu dữ liệu đó trước khi chuyển cách chạy.
+Các tệp `run.bat`, `compose.yaml` và `build-desktop.ps1` phục vụ thử nghiệm CLI, Docker và đóng gói; không cần dùng chúng cho luồng chạy desktop ở trên.
 
-### Chạy bằng Docker và noVNC (tùy chọn)
-
-Cần Docker Desktop (Linux containers) hoặc Docker Engine có Compose. GUI được hiển thị trong trình duyệt nhờ noVNC; máy chạy Docker không cần cài JDK hay Maven.
-
-```powershell
-docker compose up --build -d gui
-```
-
-Mở `http://localhost:6080/vnc.html?autoconnect=1&resize=off&quality=9&view_clip=1` để dùng giao diện JavaFX rõ nét ở tỉ lệ 1:1. Nếu màn hình không vừa cửa sổ trình duyệt, noVNC sẽ có thanh cuộn. Cổng chỉ được mở trên `localhost` của máy chạy Docker.
-
-Màn hình Docker mặc định là 1280×800. Có thể đặt kích thước phù hợp với cửa sổ trình duyệt trước khi chạy, ví dụ trong PowerShell:
-
-```powershell
-$env:VNC_WIDTH = "1200"
-$env:VNC_HEIGHT = "760"
-docker compose up --build -d gui
-```
-
-Giữ mức zoom trình duyệt ở 100% để chữ không bị trình duyệt phóng lại. Trong noVNC, chọn **Settings → Scaling mode → None** nếu đã mở bằng liên kết cũ có `resize=scale`.
-
-Để chuyển sang menu CLI dùng cùng dữ liệu, dừng GUI trước rồi chạy:
-
-```powershell
-docker compose stop gui
-docker compose run --rm cli
-```
-
-Sau khi thoát CLI, bật lại GUI bằng `docker compose up -d gui`. SQLite nằm trong Docker volume `vietbank_banking-data` và vẫn còn sau `docker compose down`; **không dùng `down -v` nếu muốn giữ dữ liệu**. Container sẽ từ chối khởi động thêm một phiên trên cùng volume khi GUI hoặc CLI đang dùng dữ liệu.
-
-### Cách 1: Giao diện dòng lệnh (CLI)
-Mở PowerShell trong thư mục dự án và chạy:
-```powershell
-.\run.bat
-```
-
-`run.bat` tự tìm JDK nếu `JAVA_HOME` chưa được đặt, sau đó mở menu trong terminal. Lần đầu cần tạo tài khoản ADMIN.
-
-Hoặc dùng lệnh terminal:
-```powershell
-$env:JAVA_HOME = "C:\duong-dan-den-jdk"
-.\mvnw.cmd -q compile exec:java
-```
-
-### Cách 2: Giao diện đồ họa Desktop (JavaFX)
-- Chạy `run-gui.bat` nếu muốn dùng giao diện đồ họa.
-
-Hoặc dùng lệnh terminal:
-```powershell
-$env:JAVA_HOME = "C:\duong-dan-den-jdk"
-.\mvnw.cmd javafx:run
-```
+**Trạng thái UI:** luồng chạy chính dùng `MainApp` → `novabank_login.fxml` → `NovaBankShell`. Các màn Tổng quan, Tài khoản, Chuyển khoản và Lịch sử là bộ NovaBank FXML, đọc dữ liệu từ SQLite qua `UIContext` và gọi service/facade khi giao dịch. Thanh điều hướng chung mở thêm các màn JavaFX hiện có: Mở tài khoản, Nạp/Rút, Mẫu chuyển, Người dùng, Hồ sơ và Proxy. Ứng dụng mô phỏng chỉ xử lý VND; xuất lịch sử tài khoản ở định dạng CSV.
 
 ---
 
@@ -136,11 +84,13 @@ src/main/java/com/banking/
 │   ├── AccountService.java
 │   ├── TransactionService.java
 │   └── NotificationService.java
-├── ui/                           ← Giao diện đồ họa JavaFX (Modern Navy Theme)
+├── ui/                           ← Giao diện đồ họa JavaFX
 │   ├── GuiLauncher.java          ← Launcher trung gian tương thích Java 17+
 │   ├── MainApp.java              ← JavaFX Application entry point
-│   ├── MainLayout.java           ← Sidebar Navy (#0A2342) + Content Switcher
-│   ├── DashboardView.java        ← Tổng quan số dư thẻ & Lịch sử GD (Singleton, Observer)
+│   ├── NovaBankShell.java        ← Điều hướng và phân quyền cho bộ FXML
+│   ├── NovaBank*Controller.java  ← Đăng nhập, tổng quan, tài khoản, chuyển khoản, lịch sử
+│   ├── MainLayout.java           ← Khung JavaFX trước đây
+│   ├── DashboardView.java        ← Dashboard JavaFX trước đây
 │   ├── AccountView.java          ← Mở & Quản lý TK, Khóa/Mở (Builder, Strategy, State)
 │   ├── DepositWithdrawView.java  ← Nạp & Rút tiền (State check, Observer, Strategy)
 │   ├── TransferView.java         ← Chuyển khoản & Mẫu định kỳ (Facade, Command, Prototype)
@@ -155,15 +105,14 @@ src/main/java/com/banking/
 
 ## 🖥️ Các màn hình giao diện đồ họa (JavaFX)
 
-1. **Dashboard (Tổng quan)**:
-   - Thẻ hiển thị số dư tài khoản trực quan với hiệu ứng đổ bóng, huy hiệu gói tài khoản.
-   - Bảng giao dịch gần đây được cập nhật thời gian thực.
-   - Hộp nhật ký Observer (SMS, Email, UI feed) bắt kịp thời mọi biến động.
+1. **Dashboard NovaBank (Tổng quan)**:
+   - Hiển thị tổng số dư VND, phân bổ theo loại tài khoản, biểu đồ và giao dịch gần đây từ SQLite.
+   - Cập nhật khi dữ liệu tài khoản hoặc giao dịch thay đổi.
    - Minh họa: `Singleton`, `Observer`.
 
-2. **Mở & Quản lý tài khoản**:
-   - Biểu mẫu mở tài khoản tích hợp **Visual Code Inspector** hiển thị cú pháp Builder Pattern thực thi.
-   - Bảng quản lý cho phép thao tác Khóa (Lock) / Mở khóa (Unlock) tức thì.
+2. **Tài khoản NovaBank & Mở tài khoản**:
+   - Màn NovaBank cho chọn tài khoản, xem số dư và xuất lịch sử CSV.
+   - ADMIN mở tài khoản trong màn JavaFX hiện có và khóa/mở khóa qua `AccountService`.
    - Minh họa: `Builder`, `Strategy`, `State`.
 
 3. **Nạp & Rút tiền**:
@@ -171,13 +120,13 @@ src/main/java/com/banking/
    - Rút tiền kiểm tra điều kiện trạng thái (`LockedState` sẽ lập tức chặn giao dịch và thông báo lỗi).
    - Minh họa: `State`, `Strategy`, `Observer`, `Facade`.
 
-4. **Chuyển khoản & Mẫu giao dịch**:
-   - Chuyển khoản liên tài khoản với tính phí tự động.
-   - Khu vực Prototype Pattern cho phép lưu mẫu (`TransferTemplate`) và nhân bản độc lập (`clone()`).
+4. **Chuyển khoản NovaBank & Mẫu giao dịch**:
+   - Chuyển khoản VND liên tài khoản qua `BankingFacade` với phí tự động và bước xác nhận.
+   - Mục **Transfer templates** mở màn JavaFX cho phép lưu mẫu (`TransferTemplate`) và nhân bản độc lập (`clone()`).
    - Minh họa: `Facade`, `Command`, `Prototype`, `Strategy`.
 
-5. **Lịch sử giao dịch & Hoàn tác**:
-   - Bộ lọc giao dịch theo số tài khoản.
+5. **Lịch sử giao dịch NovaBank & Hoàn tác**:
+   - Bộ lọc theo tài khoản, ngày, loại và số tiền; xuất CSV.
    - Nút **Hoàn tác (Undo)** lệnh chuyển khoản gần nhất nhờ ngăn xếp `TransactionHistory`.
    - Minh họa: `Command`.
 
