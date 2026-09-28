@@ -154,10 +154,13 @@ public class HistoryView extends VBox {
                 Transaction reversal = ctx.getFacade().undoLastTransfer();
                 ctx.logCustomEvent("Command Pattern", "Đã thực hiện Command.undo() — hoàn trả số dư tài khoản.");
                 ctx.notifyDataChanged();
+                ToastNotification.showSuccess("Đã hoàn tác thành công giao dịch " + reversal.getId() + "!");
                 UiUtils.showAlert(Alert.AlertType.INFORMATION, "Hoàn tác thành công", "Đã đảo ngược giao dịch",
                         "Đã tạo giao dịch hoàn tác " + reversal.getId() + " cho " + reversal.getRelatedTransactionId());
             } catch (IllegalStateException ex) {
-                UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể hoàn tác", "Giao dịch chưa hoàn tác", ex.getMessage());
+                String friendly = UiUtils.humanizeError(ex);
+                ToastNotification.showWarning(friendly);
+                UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể hoàn tác", "Giao dịch chưa hoàn tác", friendly);
             }
         }
     }

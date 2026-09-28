@@ -96,6 +96,10 @@ public class AccountView extends VBox {
         });
 
         txtInitialDeposit.setPromptText("Số tiền nạp ban đầu (VND)");
+        java.util.regex.Pattern digitPattern = java.util.regex.Pattern.compile("\\d*");
+        txtInitialDeposit.setTextFormatter(new TextFormatter<>(change ->
+                digitPattern.matcher(change.getControlNewText()).matches() ? change : null
+        ));
         txtInitialDeposit.textProperty().addListener((obs, oldVal, newVal) -> updateCodePreview());
 
         lblStrategyDescription.setWrapText(true);
@@ -212,6 +216,7 @@ public class AccountView extends VBox {
             return;
         }
 
+        ToastNotification.showSuccess("Mở thành công tài khoản " + created.getAccountNumber() + " cho " + created.getOwnerName() + "!");
         UiUtils.showAlert(Alert.AlertType.INFORMATION, "Thành công", "Mở tài khoản thành công!",
                 "Tài khoản số: " + created.getAccountNumber() + "\nChủ tài khoản: " + created.getOwnerName()
                         + "\nLoại: " + created.getType() + "\nSố dư: " + UiUtils.formatVnd(created.getBalance()));
@@ -274,8 +279,11 @@ public class AccountView extends VBox {
                             ctx.getAccountService().lockAccount(acc.getAccountNumber());
                             ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang LockedState.");
                             ctx.notifyDataChanged();
+                            ToastNotification.showWarning("Đã khóa tài khoản " + acc.getAccountNumber() + " (LockedState)");
                         } catch (IllegalStateException exception) {
-                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể khóa", null, exception.getMessage());
+                            String error = UiUtils.humanizeError(exception);
+                            ToastNotification.showError(error);
+                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể khóa", null, error);
                         }
                     });
                 } else {
@@ -286,8 +294,11 @@ public class AccountView extends VBox {
                             ctx.getAccountService().unlockAccount(acc.getAccountNumber());
                             ctx.logCustomEvent("State Pattern", "Tài khoản " + acc.getAccountNumber() + " chuyển sang ActiveState.");
                             ctx.notifyDataChanged();
+                            ToastNotification.showSuccess("Đã mở khóa tài khoản " + acc.getAccountNumber() + " (ActiveState)");
                         } catch (IllegalStateException exception) {
-                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể mở khóa", null, exception.getMessage());
+                            String error = UiUtils.humanizeError(exception);
+                            ToastNotification.showError(error);
+                            UiUtils.showAlert(Alert.AlertType.ERROR, "Không thể mở khóa", null, error);
                         }
                     });
                 }

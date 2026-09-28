@@ -208,13 +208,18 @@ public class ProxyDemoView extends VBox {
             appendLog(String.format("✔ [Proxy.deposit] Cho phép vai trò %s nạp +%s vào tài khoản %s. Số dư mới: %s",
                     proxy.getRole(), UiUtils.formatVnd(amount), proxy.getAccountNumber(), UiUtils.formatVnd(proxy.getBalance())));
             ctx.notifyDataChanged();
+            ToastNotification.showSuccess("Nạp thành công " + UiUtils.formatVnd(amount) + " qua Proxy!");
         } catch (SecurityException ex) {
+            String friendly = UiUtils.humanizeError(ex);
             appendLog(String.format("⛔ [Proxy INTERCEPTED] TỪ CHỐI TRUY CẬP: %s", ex.getMessage()));
-            UiUtils.showAlert(Alert.AlertType.ERROR, "Proxy Security Block",
-                    "⛔ Bị chặn bởi AccountProxy (SecurityException)",
-                    "Vai trò READONLY chỉ có quyền xem số dư, không được phép nạp tiền vào hệ thống!");
+            ToastNotification.showError(friendly);
+            UiUtils.showAlert(Alert.AlertType.ERROR, "Quyền truy cập bị từ chối",
+                    "⛔ Bị chặn bởi AccountProxy (Protection Proxy)",
+                    friendly + "\n\n(Hành vi của Proxy Pattern: Đối tượng Proxy chặn cuộc gọi trước khi tới RealAccount).");
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
+            String friendly = UiUtils.humanizeError(ex);
+            ToastNotification.showWarning(friendly);
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", null, friendly);
         }
     }
 
@@ -228,13 +233,18 @@ public class ProxyDemoView extends VBox {
             appendLog(String.format("✔ [Proxy.withdraw] Cho phép vai trò %s rút -%s từ tài khoản %s. Số dư còn: %s",
                     proxy.getRole(), UiUtils.formatVnd(amount), proxy.getAccountNumber(), UiUtils.formatVnd(proxy.getBalance())));
             ctx.notifyDataChanged();
+            ToastNotification.showSuccess("Rút thành công " + UiUtils.formatVnd(amount) + " qua Proxy!");
         } catch (SecurityException ex) {
+            String friendly = UiUtils.humanizeError(ex);
             appendLog(String.format("⛔ [Proxy INTERCEPTED] TỪ CHỐI TRUY CẬP: %s", ex.getMessage()));
-            UiUtils.showAlert(Alert.AlertType.ERROR, "Proxy Security Block",
-                    "⛔ Bị chặn bởi AccountProxy (SecurityException)",
-                    "Vai trò READONLY không có quyền rút tiền!\nAccountProxy đã chủ động chặn cuộc gọi trước khi tới RealAccount.");
+            ToastNotification.showError(friendly);
+            UiUtils.showAlert(Alert.AlertType.ERROR, "Quyền truy cập bị từ chối",
+                    "⛔ Bị chặn bởi AccountProxy (Protection Proxy)",
+                    friendly + "\n\n(Hành vi của Proxy Pattern: Đối tượng Proxy chặn cuộc gọi trước khi tới RealAccount).");
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Số tiền không hợp lệ", "Vui lòng nhập định dạng số hợp lệ.");
+            String friendly = UiUtils.humanizeError(ex);
+            ToastNotification.showWarning(friendly);
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", null, friendly);
         }
     }
 

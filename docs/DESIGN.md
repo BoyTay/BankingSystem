@@ -89,8 +89,8 @@ sequenceDiagram
 - **Proxy:** `AccountProxy` kiểm tra vai trò trước khi chuyển lời gọi đến `RealAccount`; `READONLY` chỉ xem số dư. Màn hình này minh họa pattern; đăng nhập ứng dụng dùng ADMIN/STAFF/VIEWER riêng.
 - **Facade:** `BankingFacade` là cửa vào nghiệp vụ của GUI và CLI. Nó kiểm tra điều kiện, tính phí, gọi Command, lưu giao dịch và kích hoạt thông báo.
 - **Command:** `TransferCommand` đóng gói chuyển khoản và phép đảo ngược; `TransactionHistory` chỉ lưu lệnh thực thi thành công và giữ lệnh lại nếu undo thất bại.
-- **Observer:** tài khoản phát thông báo cho SMS, Email và vùng log UI. Các notifier hiện chỉ in mô phỏng, không gửi tin thật.
-- **State:** `ActiveState` cho phép nạp/rút; `LockedState` cho phép nhận tiền nhưng chặn rút. Việc đổi State tự đồng bộ `AccountStatus`.
+- **Observer:** tài khoản phát thông báo cho SMS, Email, vùng log UI và đồng bộ dữ liệu thời gian thực lên Dashboard (biểu đồ PieChart tỷ trọng số dư và LineChart biến động tài chính tự động cập nhật ngay khi phát sinh giao dịch).
+- **State:** `ActiveState` cho phép nạp/rút; `LockedState` cho phép nhận tiền nhưng chặn rút. Việc đổi State tự đồng bộ `AccountStatus` và hỗ trợ thao tác khóa/mở nhanh trực tiếp trên từng thẻ tài khoản ở Dashboard.
 - **Strategy:** từng loại tài khoản chọn một cách tính phí; phí giao dịch được làm tròn đến đồng trước khi ghi sổ.
 
 ## Quy tắc nghiệp vụ để demo và kiểm thử

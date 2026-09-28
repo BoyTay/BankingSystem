@@ -3,10 +3,15 @@ package com.banking.ui;
 import com.banking.model.Account;
 import com.banking.model.Money;
 import com.banking.model.Transaction;
+import com.banking.model.enums.AccountStatus;
 import com.banking.pattern.creational.TransferTemplate;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Màn hình Chuyển khoản ngân hàng.
@@ -15,6 +20,12 @@ import javafx.scene.layout.*;
  * - Command Pattern: Chuyển khoản được đóng gói thành đối tượng TransferCommand, lưu vào TransactionHistory để hỗ trợ Undo.
  * - Prototype Pattern: Tạo mẫu chuyển khoản (TransferTemplate) và nhân bản (clone()) nhanh chóng.
  * - Strategy Pattern: Phí được tính tự động từ FeeStrategy của tài khoản gửi.
+ *
+ * Tính năng nâng cao:
+ * - Validation thời gian thực & TextFormatter chỉ nhận số nguyên.
+ * - Autocomplete tìm kiếm tài khoản thụ hưởng theo tên hoặc số tài khoản.
+ * - Dialog xác nhận tóm tắt giao dịch trước khi gửi lệnh.
+ * - Toast notification phản hồi kết quả mượt mà.
  */
 public class TransferView extends VBox {
 
@@ -23,10 +34,16 @@ public class TransferView extends VBox {
     // Form controls
     private final ComboBox<Account> cbFromAccount = new ComboBox<>();
     private final ComboBox<Account> cbToAccount = new ComboBox<>();
+    private final TextField txtSearchToAccount = new TextField();
+    private final ContextMenu autocompleteMenu = new ContextMenu();
+    private final HBox recipientPreviewCard = new HBox(12);
+
     private final TextField txtAmount = new TextField();
+    private final Label lblAmountValidation = new Label();
     private final TextField txtDescription = new TextField("Chuyển tiền qua Banking");
     private final Label lblFromBalance = new Label();
     private final Label lblFeeCalculation = new Label();
+    private final Button btnTransfer = new Button("🚀 Chuyển Khoản Ngay (Command + Facade)");
 
     // Prototype controls
     private TransferTemplate savedTemplate;
@@ -58,7 +75,7 @@ public class TransferView extends VBox {
         VBox titleBox = new VBox(4);
         Label title = new Label("Chuyển Khoản Ngân Hàng");
         title.getStyleClass().add("page-title");
-        Label subtitle = new Label("Giao dịch chuyển tiền liên tài khoản hỗ trợ Undo (Command) & Mẫu giao dịch (Prototype)");
+        Label subtitle = new Label("Giao dịch chuyển tiền liên tài khoản hỗ trợ Undo (Command), Mẫu giao dịch (Prototype) & Validation thời gian thực");
         subtitle.getStyleClass().add("page-subtitle");
         titleBox.getChildren().addAll(title, subtitle);
 
@@ -86,17 +103,39 @@ public class TransferView extends VBox {
 
         GridPane grid = new GridPane();
         grid.setHgap(12);
-        grid.setVgap(14);
+        grid.setVgap(12);
 
         setupAccountCombo(cbFromAccount, true);
         setupAccountCombo(cbToAccount, false);
 
-        txtAmount.setPromptText("Nhập số tiền (VND)");
-        txtAmount.textProperty().addListener((obs, oldVal, newVal) -> updateFeePreview());
-        cbFromAccount.valueProperty().addListener((obs, oldVal, newVal) -> updateFeePreview());
+        // ── 1. TextFormatter chỉ nhận chữ số ──────────────────
+        Pattern digitPattern = Pattern.compile("\\d*");
+        txtAmount.setTextFormatter(new TextFormatter<>(change ->
+                digitPattern.matcher(change.getControlNewText()).matches() ? change : null
+        ));
+        txtAmount.setPromptText("Nhập số tiền chuyển (VND)");
 
+        // ── 2. Real-time validation listener ───────────────────
+        txtAmount.textProperty().addListener((obs, oldVal, newVal) -> validateForm());
+        cbFromAccount.valueProperty().addListener((obs, oldVal, newVal) -> validateForm());
+        cbToAccount.valueProperty().addListener((obs, oldVal, newVal) -> {
+            updateRecipientPreview();
+            validateForm();
+        });
+
+        lblAmountValidation.setStyle("-fx-font-size: 11px; -fx-font-weight: bold;");
         lblFeeCalculation.setStyle("-fx-font-size: 11px; -fx-text-fill: #0369A1; -fx-font-weight: bold;");
         lblFeeCalculation.setText("Phí giao dịch: 0 VND");
+
+        // ── 3. Autocomplete / Search ô người nhận ─────────────
+        txtSearchToAccount.setPromptText("🔍 Gõ tìm nhanh số TK hoặc tên người nhận...");
+        txtSearchToAccount.textProperty().addListener((obs, oldVal, newVal) -> handleSearchToAccount(newVal));
+
+        VBox toAccountBox = new VBox(6);
+        toAccountBox.getChildren().addAll(txtSearchToAccount, cbToAccount, recipientPreviewCard);
+
+        VBox amountBox = new VBox(4);
+        amountBox.getChildren().addAll(txtAmount, lblAmountValidation);
 
         grid.add(new Label("Tài khoản nguồn:"), 0, 0);
         grid.add(cbFromAccount, 1, 0);
@@ -105,10 +144,10 @@ public class TransferView extends VBox {
         grid.add(lblFromBalance, 1, 1);
 
         grid.add(new Label("Tài khoản thụ hưởng:"), 0, 2);
-        grid.add(cbToAccount, 1, 2);
+        grid.add(toAccountBox, 1, 2);
 
         grid.add(new Label("Số tiền chuyển:"), 0, 3);
-        grid.add(txtAmount, 1, 3);
+        grid.add(amountBox, 1, 3);
 
         grid.add(new Label("Phí giao dịch:"), 0, 4);
         grid.add(lblFeeCalculation, 1, 4);
@@ -122,11 +161,10 @@ public class TransferView extends VBox {
         grid.getColumnConstraints().addAll(c1, c2);
 
         HBox buttonBox = new HBox(12);
-        Button btnTransfer = new Button("🚀 Chuyển Khoản Ngay (Command + Facade)");
         btnTransfer.getStyleClass().add("btn-primary");
         btnTransfer.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(btnTransfer, Priority.ALWAYS);
-        btnTransfer.setOnAction(e -> handleTransfer());
+        btnTransfer.setOnAction(e -> handleTransferConfirmation());
 
         Button btnSaveTemplate = new Button("💾 Lưu Mẫu (Prototype)");
         btnSaveTemplate.getStyleClass().add("btn-secondary");
@@ -136,6 +174,237 @@ public class TransferView extends VBox {
 
         card.getChildren().addAll(cardTitle, grid, buttonBox);
         return card;
+    }
+
+    private void handleSearchToAccount(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            autocompleteMenu.hide();
+            return;
+        }
+
+        String search = keyword.trim().toLowerCase();
+        Account from = cbFromAccount.getValue();
+
+        List<Account> matches = ctx.getAccounts().stream()
+                .filter(a -> from == null || !a.getAccountNumber().equals(from.getAccountNumber()))
+                .filter(a -> a.getAccountNumber().toLowerCase().contains(search)
+                        || a.getOwnerName().toLowerCase().contains(search))
+                .toList();
+
+        if (matches.isEmpty()) {
+            autocompleteMenu.hide();
+            return;
+        }
+
+        autocompleteMenu.getItems().clear();
+        for (Account a : matches) {
+            String text = String.format("%s - %s (%s)", a.getAccountNumber(), a.getOwnerName(), a.getType());
+            MenuItem item = new MenuItem(text);
+            item.setOnAction(e -> {
+                cbToAccount.setValue(a);
+                txtSearchToAccount.clear();
+                autocompleteMenu.hide();
+            });
+            autocompleteMenu.getItems().add(item);
+        }
+
+        if (!autocompleteMenu.isShowing()) {
+            autocompleteMenu.show(txtSearchToAccount, javafx.geometry.Side.BOTTOM, 0, 0);
+        }
+    }
+
+    private void updateRecipientPreview() {
+        recipientPreviewCard.getChildren().clear();
+        Account to = cbToAccount.getValue();
+        if (to == null) return;
+
+        recipientPreviewCard.setStyle("-fx-background-color: #F8FAFC; -fx-padding: 8 12; -fx-background-radius: 8px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;");
+        recipientPreviewCard.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblName = new Label("👤 " + to.getOwnerName());
+        lblName.setStyle("-fx-font-weight: bold; -fx-text-fill: #0F172A; -fx-font-size: 12px;");
+
+        Label typeBadge = UiUtils.createTypeBadge(to.getType());
+        Label statusBadge = UiUtils.createStatusBadge(to.getStatus());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        recipientPreviewCard.getChildren().addAll(lblName, spacer, typeBadge, statusBadge);
+    }
+
+    private void validateForm() {
+        Account from = cbFromAccount.getValue();
+        Account to = cbToAccount.getValue();
+
+        if (from == null) {
+            lblAmountValidation.setText("Vui lòng chọn tài khoản nguồn.");
+            lblAmountValidation.setStyle("-fx-text-fill: #64748B;");
+            txtAmount.setStyle("");
+            btnTransfer.setDisable(true);
+            return;
+        }
+
+        // Kiểm tra nếu tài khoản trùng nhau
+        if (to != null && from.getAccountNumber().equals(to.getAccountNumber())) {
+            lblAmountValidation.setText("⚠️ Tài khoản nguồn và đích không được trùng nhau!");
+            lblAmountValidation.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+            txtAmount.setStyle("-fx-border-color: #EF4444; -fx-border-radius: 8px;");
+            btnTransfer.setDisable(true);
+            return;
+        }
+
+        String amtStr = txtAmount.getText().trim();
+        if (amtStr.isEmpty()) {
+            lblFeeCalculation.setText("Phí giao dịch: 0 VND");
+            lblAmountValidation.setText("Vui lòng nhập số tiền muốn chuyển.");
+            lblAmountValidation.setStyle("-fx-text-fill: #64748B;");
+            txtAmount.setStyle("");
+            btnTransfer.setDisable(true);
+            return;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(amtStr);
+        } catch (NumberFormatException e) {
+            lblAmountValidation.setText("⚠️ Định dạng số tiền không hợp lệ.");
+            lblAmountValidation.setStyle("-fx-text-fill: #DC2626;");
+            txtAmount.setStyle("-fx-border-color: #EF4444; -fx-border-radius: 8px;");
+            btnTransfer.setDisable(true);
+            return;
+        }
+
+        if (amount <= 0) {
+            lblAmountValidation.setText("⚠️ Số tiền phải lớn hơn 0 VND.");
+            lblAmountValidation.setStyle("-fx-text-fill: #DC2626;");
+            txtAmount.setStyle("-fx-border-color: #EF4444; -fx-border-radius: 8px;");
+            btnTransfer.setDisable(true);
+            return;
+        }
+
+        // Tính phí
+        double fee = Money.nonNegative(from.getFeeStrategy().calculateFee(amount));
+        lblFeeCalculation.setText(String.format("Phí: %s (%s)",
+                UiUtils.formatVnd(fee), from.getFeeStrategy().getName()));
+
+        double totalDebit = amount + fee;
+
+        if (from.getBalance() < totalDebit) {
+            lblAmountValidation.setText(String.format(
+                    "⚠️ Số dư không đủ! Cần: %s (gồm phí), Khả dụng: %s",
+                    UiUtils.formatVnd(totalDebit), UiUtils.formatVnd(from.getBalance())
+            ));
+            lblAmountValidation.setStyle("-fx-text-fill: #DC2626;");
+            txtAmount.setStyle("-fx-border-color: #EF4444; -fx-border-radius: 8px; -fx-focus-color: #EF4444;");
+            btnTransfer.setDisable(true);
+        } else {
+            double remaining = from.getBalance() - totalDebit;
+            lblAmountValidation.setText(String.format(
+                    "✔ Hợp lệ. Số dư dự kiến còn lại: %s",
+                    UiUtils.formatVnd(remaining)
+            ));
+            lblAmountValidation.setStyle("-fx-text-fill: #15803D;");
+            txtAmount.setStyle("-fx-border-color: #10B981; -fx-border-radius: 8px; -fx-focus-color: #10B981;");
+            btnTransfer.setDisable(to == null);
+        }
+    }
+
+    private void handleTransferConfirmation() {
+        Account from = cbFromAccount.getValue();
+        Account to = cbToAccount.getValue();
+
+        if (from == null || to == null) {
+            ToastNotification.showWarning("Vui lòng chọn cả tài khoản nguồn và đích.");
+            return;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(txtAmount.getText().trim());
+        } catch (NumberFormatException e) {
+            ToastNotification.showError("Số tiền nhập vào không hợp lệ.");
+            return;
+        }
+
+        double fee = Money.nonNegative(from.getFeeStrategy().calculateFee(amount));
+        double totalDebit = amount + fee;
+        String desc = txtDescription.getText().trim().isEmpty() ? "Chuyển tiền qua Banking" : txtDescription.getText().trim();
+
+        // ── Modal Xác Nhận Giao Dịch ─────────────────────────
+        Dialog<Boolean> confirmModal = new Dialog<>();
+        confirmModal.setTitle("Xác nhận chuyển khoản");
+        confirmModal.setHeaderText("XÁC NHẬN LỆNH CHUYỂN KHOẢN LIÊN TÀI KHOẢN");
+
+        ButtonType btnConfirm = new ButtonType("✔ Xác nhận chuyển", ButtonBar.ButtonData.OK_DONE);
+        confirmModal.getDialogPane().getButtonTypes().addAll(btnConfirm, ButtonType.CANCEL);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(12));
+
+        GridPane summaryGrid = new GridPane();
+        summaryGrid.setHgap(12);
+        summaryGrid.setVgap(8);
+
+        summaryGrid.add(new Label("Tài khoản trích tiền:"), 0, 0);
+        summaryGrid.add(new Label(from.getAccountNumber() + " (" + from.getOwnerName() + ")"), 1, 0);
+
+        summaryGrid.add(new Label("Tài khoản thụ hưởng:"), 0, 1);
+        summaryGrid.add(new Label(to.getAccountNumber() + " (" + to.getOwnerName() + ")"), 1, 1);
+
+        summaryGrid.add(new Label("Số tiền chuyển:"), 0, 2);
+        Label lblAmt = new Label(UiUtils.formatVnd(amount));
+        lblAmt.setStyle("-fx-font-weight: bold; -fx-text-fill: #0F172A;");
+        summaryGrid.add(lblAmt, 1, 2);
+
+        summaryGrid.add(new Label("Phí giao dịch:"), 0, 3);
+        summaryGrid.add(new Label(UiUtils.formatVnd(fee) + " (" + from.getFeeStrategy().getName() + ")"), 1, 3);
+
+        summaryGrid.add(new Label("Tổng tiền trích nợ:"), 0, 4);
+        Label lblTotal = new Label(UiUtils.formatVnd(totalDebit));
+        lblTotal.setStyle("-fx-font-weight: bold; -fx-text-fill: #DC2626; -fx-font-size: 14px;");
+        summaryGrid.add(lblTotal, 1, 4);
+
+        summaryGrid.add(new Label("Nội dung chuyển:"), 0, 5);
+        summaryGrid.add(new Label(desc), 1, 5);
+
+        Label note = new Label("💡 Giao dịch này được ghi vào TransactionHistory (Command Pattern) và hỗ trợ hoàn tác Undo.");
+        note.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B; -fx-font-style: italic;");
+
+        content.getChildren().addAll(summaryGrid, new Separator(), note);
+        confirmModal.getDialogPane().setContent(content);
+
+        confirmModal.getDialogPane().getStylesheets().add(UiUtils.class.getResource("/com/banking/ui/app.css").toExternalForm());
+        Button okButton = (Button) confirmModal.getDialogPane().lookupButton(btnConfirm);
+        okButton.getStyleClass().add("btn-primary");
+
+        confirmModal.setResultConverter(b -> b == btnConfirm);
+
+        confirmModal.showAndWait().ifPresent(confirmed -> {
+            if (confirmed) {
+                executeTransfer(from, to, amount, desc);
+            }
+        });
+    }
+
+    private void executeTransfer(Account from, Account to, double amount, String desc) {
+        try {
+            Transaction transaction = ctx.getFacade().transfer(
+                    from.getAccountNumber(), to.getAccountNumber(), amount, desc);
+
+            ctx.logCustomEvent("Command Pattern", "Đã thực thi " + transaction.getId());
+            ctx.notifyDataChanged();
+
+            ToastNotification.showSuccess(String.format("Chuyển thành công %s đến TK %s!",
+                    UiUtils.formatVnd(amount), to.getAccountNumber()));
+
+            txtAmount.clear();
+            validateForm();
+        } catch (Exception e) {
+            String friendlyError = UiUtils.humanizeError(e);
+            ToastNotification.showError(friendlyError);
+            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể chuyển khoản", null, friendlyError);
+        }
     }
 
     private VBox buildPrototypeCard() {
@@ -207,56 +476,11 @@ public class TransferView extends VBox {
         }
     }
 
-    private void updateFeePreview() {
-        Account from = cbFromAccount.getValue();
-        if (from == null) {
-            lblFeeCalculation.setText("Phí giao dịch: 0 VND");
-            return;
-        }
-        try {
-            double amount = Double.parseDouble(txtAmount.getText().trim());
-            double fee = Money.nonNegative(from.getFeeStrategy().calculateFee(Money.positive(amount)));
-            lblFeeCalculation.setText(String.format("Phí: %s (%s)",
-                    UiUtils.formatVnd(fee), from.getFeeStrategy().getName()));
-        } catch (IllegalArgumentException e) {
-            lblFeeCalculation.setText("Phí giao dịch: 0 VND");
-        }
-    }
-
-    private void handleTransfer() {
-        Account from = cbFromAccount.getValue();
-        Account to = cbToAccount.getValue();
-
-        if (from == null || to == null) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Thiếu thông tin", "Vui lòng chọn cả tài khoản nguồn và tài khoản đích.");
-            return;
-        }
-
-        try {
-            double amount = Double.parseDouble(txtAmount.getText().trim());
-            String desc = txtDescription.getText().trim().isEmpty() ? "Chuyển tiền qua Banking" : txtDescription.getText().trim();
-            Transaction transaction = ctx.getFacade().transfer(
-                    from.getAccountNumber(), to.getAccountNumber(), amount, desc);
-
-            ctx.logCustomEvent("Command Pattern", "Đã thực thi " + transaction.getId());
-            ctx.notifyDataChanged();
-
-            UiUtils.showAlert(Alert.AlertType.INFORMATION, "Chuyển khoản thành công", "Giao dịch đã thực hiện qua Command Pattern!",
-                    String.format("Chuyển: %s\nĐến tài khoản: %s (%s)\nPhí: %s\nSố dư mới của bạn: %s\n\nCó thể hoàn tác tại tab 'Lịch sử GD' nếu tài khoản nhận còn đủ số dư.",
-                            UiUtils.formatVnd(transaction.getAmount()), to.getAccountNumber(), to.getOwnerName(),
-                            UiUtils.formatVnd(transaction.getFee()), UiUtils.formatVnd(from.getBalance())));
-
-            txtAmount.clear();
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể chuyển khoản", "Giao dịch chưa thực hiện", e.getMessage());
-        }
-    }
-
     private void handleSaveTemplate() {
         Account from = cbFromAccount.getValue();
         Account to = cbToAccount.getValue();
         if (from == null || to == null) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Chưa đủ thông tin", "Vui lòng chọn tài khoản nguồn và đích trước khi lưu mẫu.");
+            ToastNotification.showWarning("Vui lòng chọn tài khoản nguồn và đích trước khi lưu mẫu.");
             return;
         }
 
@@ -264,7 +488,7 @@ public class TransferView extends VBox {
         try {
             amount = Money.positive(Double.parseDouble(txtAmount.getText().trim()));
         } catch (IllegalArgumentException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể lưu mẫu", "Số tiền không hợp lệ", e.getMessage());
+            ToastNotification.showError("Số tiền không hợp lệ để lưu mẫu.");
             return;
         }
 
@@ -282,43 +506,37 @@ public class TransferView extends VBox {
                 + "// HashCode: @" + Integer.toHexString(savedTemplate.hashCode()) + "\n"
                 + "// Đã sẵn sàng để nhân bản bằng clone()!");
 
-        UiUtils.showAlert(Alert.AlertType.INFORMATION, "Prototype Pattern", "Đã lưu mẫu gốc thành công",
-                "Mẫu giao dịch đã được tạo. Bạn có thể bấm 'Nhân bản mẫu (clone())' để tạo bản sao độc lập theo Prototype Pattern.");
+        ToastNotification.showSuccess("Đã lưu mẫu gốc thành công (Prototype Pattern)!");
     }
 
     private void handleCloneTemplate() {
         if (savedTemplate == null) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Chưa có mẫu", "Chưa có mẫu gốc", "Vui lòng tạo và lưu một mẫu giao dịch trước.");
+            ToastNotification.showWarning("Chưa có mẫu gốc! Vui lòng lưu một mẫu trước.");
             return;
         }
 
-        // Gọi clone() của Prototype Pattern
         TransferTemplate cloned = savedTemplate.clone();
         cloned.setDescription("Bản sao định kỳ — " + savedTemplate.getDescription());
         try {
-            cloned.setAmount(Money.positive(savedTemplate.getAmount() * 1.05)); // Tăng 5% cho bản sao
+            cloned.setAmount(Money.positive(savedTemplate.getAmount() * 1.05));
         } catch (IllegalArgumentException e) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể nhân bản", "Số tiền vượt giới hạn", e.getMessage());
-            return;
+            cloned.setAmount(savedTemplate.getAmount());
         }
 
-        txtTemplateInspector.setText("// KẾT QUẢ NHÂN BẢN BẰNG PROTOTYPE PATTERN (clone()):\n\n"
+        lblTemplateStatus.setText("✔ Đã nhân bản (clone()): Bản sao có số tiền +5% và nội dung mới.");
+        txtTemplateInspector.setText("// Bản sao độc lập được sinh ra từ clone():\n"
                 + "TransferTemplate cloned = original.clone();\n"
-                + "cloned.setDescription(\"" + cloned.getDescription() + "\");\n"
-                + "cloned.setAmount(" + cloned.getAmount() + ");\n\n"
-                + "// Kiểm tra tính chất Prototype:\n"
-                + "original == cloned       => " + (savedTemplate == cloned) + " (2 đối tượng độc lập trong bộ nhớ)\n"
-                + "original.hashCode()       => @" + Integer.toHexString(savedTemplate.hashCode()) + "\n"
-                + "cloned.hashCode()         => @" + Integer.toHexString(cloned.hashCode()) + "\n"
-                + "original.getAmount()      => " + savedTemplate.getAmount() + "\n"
-                + "cloned.getAmount()        => " + cloned.getAmount() + " (Đã chỉnh sửa không ảnh hưởng mẫu gốc)");
+                + "cloned.setAmount(" + cloned.getAmount() + "); // Tăng 5%\n"
+                + "// HashCode Cloned: @" + Integer.toHexString(cloned.hashCode()) + " != Original: @" + Integer.toHexString(savedTemplate.hashCode()) + "\n"
+                + "// Thay đổi trên bản sao KHÔNG ảnh hưởng mẫu gốc!");
 
-        lblTemplateStatus.setText("✔ Đã clone thành công bản sao mới: @" + Integer.toHexString(cloned.hashCode()));
+        savedTemplate = cloned;
+        ToastNotification.showInfo("Nhân bản thành công qua clone()!");
     }
 
     private void handleApplyTemplate() {
         if (savedTemplate == null) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Chưa có mẫu", "Chưa có mẫu", "Vui lòng lưu hoặc nhân bản mẫu trước.");
+            ToastNotification.showWarning("Chưa có mẫu nào được lưu.");
             return;
         }
 
@@ -334,6 +552,7 @@ public class TransferView extends VBox {
 
         txtAmount.setText(String.valueOf((long) savedTemplate.getAmount()));
         txtDescription.setText(savedTemplate.getDescription());
+        ToastNotification.showSuccess("Đã áp dụng mẫu giao dịch vào Form!");
     }
 
     private VBox buildPatternExplainerCard() {
@@ -373,6 +592,15 @@ public class TransferView extends VBox {
             cbToAccount.setValue(ctx.getAccounts().get(1));
         }
 
-        updateFeePreview();
+        updateRecipientPreview();
+        validateForm();
+    }
+
+    public void selectFromAccount(String accNo) {
+        if (accNo == null) return;
+        ctx.getAccounts().stream()
+                .filter(a -> a.getAccountNumber().equalsIgnoreCase(accNo))
+                .findFirst()
+                .ifPresent(cbFromAccount::setValue);
     }
 }
