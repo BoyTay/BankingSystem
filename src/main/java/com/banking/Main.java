@@ -13,6 +13,8 @@ import com.banking.service.AccountService;
 import com.banking.service.AuthService;
 import com.banking.service.NotificationService;
 import com.banking.service.TransactionService;
+import com.banking.persistence.SingleInstanceGuard;
+import com.banking.persistence.SqliteStore;
 
 import java.util.List;
 import java.util.Scanner;
@@ -42,6 +44,12 @@ public class Main {
     // ═══════════════════════════════════════════════════════
 
     public static void main(String[] args) {
+        try (SingleInstanceGuard ignored = SingleInstanceGuard.acquire(SqliteStore.defaultPath())) {
+            runMenu();
+        }
+    }
+
+    private static void runMenu() {
         AuthService.User operator = login();
         if (operator == null) return;
         txHistory.restoreFromLedger(transactionService.getAllTransactions(), accountService);

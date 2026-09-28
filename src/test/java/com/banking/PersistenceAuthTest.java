@@ -6,6 +6,7 @@ import com.banking.model.enums.AccountStatus;
 import com.banking.model.enums.AccountType;
 import com.banking.pattern.behavioral.LockedState;
 import com.banking.persistence.SqliteStore;
+import com.banking.persistence.SingleInstanceGuard;
 import com.banking.service.AuthService;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,17 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PersistenceAuthTest {
+    @Test
+    void onlyOneProcessCanUseTheSameDatabaseAtATime() throws Exception {
+        Path file = Files.createTempDirectory("vietbank-lock-").resolve("banking.db");
+        try (SingleInstanceGuard first = SingleInstanceGuard.acquire(file)) {
+            assertThrows(IllegalStateException.class, () -> SingleInstanceGuard.acquire(file));
+        }
+        try (SingleInstanceGuard reopened = SingleInstanceGuard.acquire(file)) {
+            assertNotNull(reopened);
+        }
+    }
+
     @Test
     void restartRestoresAccountsLedgerAndUsers() throws Exception {
         Path file = Files.createTempDirectory("vietbank-store-").resolve("banking.db");
