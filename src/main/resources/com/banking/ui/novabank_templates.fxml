@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.banking.ui.NovaBankTemplatesController"
+            prefHeight="920.0" prefWidth="1440.0"
+            stylesheets="@novabank.css" styleClass="main-window">
+
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <VBox spacing="14.0" styleClass="content-container">
+                <padding>
+                    <Insets top="14.0" right="24.0" bottom="16.0" left="24.0"/>
+                </padding>
+
+                <!-- ==================== 1. HEADER (TINH GỌN, HIỆN ĐẠI) ==================== -->
+                <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+                    <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0" styleClass="header-badge-tag" maxWidth="-Infinity">
+                            <Circle radius="3.0" styleClass="header-badge-tag-dot"/>
+                            <Label text="DANH BẠ MẪU" styleClass="header-badge-tag-text"/>
+                        </HBox>
+                        <Label text="Mẫu chuyển tiền &amp; Định kỳ" styleClass="header-greeting"/>
+                        <Label text="Lưu và quản lý các giao dịch thường dùng để thanh toán nhanh chỉ với 1 chạm." styleClass="header-subtitle"/>
+                    </VBox>
+
+                    <!-- Right Controls: Search, + Mẫu mới, Bell, Profile Pill -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0" prefWidth="260.0">
+                            <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
+                            <TextField fx:id="txtSearchTemplates" promptText="Tìm kiếm mẫu..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <Label text="Ctrl K" styleClass="search-shortcut-badge" minWidth="-Infinity"/>
+                        </HBox>
+
+                        <Button text="+ Mẫu mới" onAction="#handleFocusNewTemplate" styleClass="btn-new-template-header"/>
+
+                        <StackPane styleClass="icon-btn-round">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="header-bell-icon"/>
+                            <Circle radius="3.5" styleClass="notification-dot-badge" StackPane.alignment="TOP_RIGHT">
+                                <StackPane.margin>
+                                    <Insets top="8.0" right="8.0"/>
+                                </StackPane.margin>
+                            </Circle>
+                        </StackPane>
+
+                        <HBox alignment="CENTER_LEFT" spacing="9.0" styleClass="user-profile-pill">
+                            <StackPane styleClass="avatar-circle">
+                                <Label fx:id="lblProfileAvatar" text="A" styleClass="avatar-text"/>
+                            </StackPane>
+                            <VBox spacing="1.0" alignment="CENTER_LEFT">
+                                <Label fx:id="lblProfileName" text="Admin" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Admin" styleClass="user-tier"/>
+                            </VBox>
+                            <Label text="▾" styleClass="user-chevron"/>
+                        </HBox>
+                    </HBox>
+                </HBox>
+
+                <!-- ==================== 2. MAIN 2-COLUMN SECTION ==================== -->
+                <HBox spacing="16.0" alignment="TOP_LEFT">
+
+                    <!-- ──────── CỘT TRÁI: FORM TẠO MẪU MỚI (390px) ──────── -->
+                    <VBox styleClass="card" prefWidth="390.0" minWidth="350.0" spacing="12.0">
+                        <!-- Card Header -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <StackPane styleClass="icon-circle-blue">
+                                <SVGPath content="M12 4v16m8-8H4" style="-fx-fill: transparent; -fx-stroke: #2563EB; -fx-stroke-width: 2.2; -fx-stroke-line-cap: round;"/>
+                            </StackPane>
+                            <VBox spacing="1.0">
+                                <Label text="Tạo Mẫu Giao Dịch Mới" styleClass="card-title"/>
+                                <Label text="Thiết lập sẵn tài khoản và số tiền để tái sử dụng nhanh" styleClass="card-hint"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Field 1: Template Name / Description (Tên gợi nhớ) -->
+                        <VBox spacing="4.0">
+                            <Label text="Tên gợi nhớ của mẫu" styleClass="form-field-label"/>
+                            <HBox alignment="CENTER_LEFT" styleClass="input-container">
+                                <SVGPath content="M7 7h10M7 12h10M7 17h6" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.6; -fx-stroke-line-cap: round;"/>
+                                <TextField fx:id="txtTemplateDescription" promptText="VD: Tiền thuê nhà, Tiền học phí, Sinh hoạt..." styleClass="clean-text-input" HBox.hgrow="ALWAYS"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Field 2: Source Account (Tài khoản trích tiền) -->
+                        <VBox spacing="4.0">
+                            <Label text="Tài khoản nguồn trích tiền" styleClass="form-field-label"/>
+                            <ComboBox fx:id="cbFromAccount" maxWidth="Infinity" styleClass="custom-combo-box" promptText="Chọn tài khoản nguồn..."/>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <SVGPath content="M3 10h18V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2v-4" style="-fx-fill: transparent; -fx-stroke: #10B981; -fx-stroke-width: 1.5;"/>
+                                <Label fx:id="lblFromBalance" text="Số dư khả dụng: 0 VND" styleClass="balance-indicator"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Field 3: Recipient Account (Tài khoản thụ hưởng) -->
+                        <VBox spacing="4.0">
+                            <Label text="Tài khoản người nhận (Thụ hưởng)" styleClass="form-field-label"/>
+                            <!-- Fast Search Input -->
+                            <HBox alignment="CENTER_LEFT" styleClass="input-container">
+                                <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" style="-fx-fill: transparent; -fx-stroke: #94A3B8; -fx-stroke-width: 1.5; -fx-scale-x: 0.8; -fx-scale-y: 0.8;"/>
+                                <TextField fx:id="txtSearchToAccount" promptText="Tìm nhanh số TK hoặc tên người nhận..." styleClass="clean-text-input" HBox.hgrow="ALWAYS"/>
+                            </HBox>
+                            <ComboBox fx:id="cbToAccount" maxWidth="Infinity" styleClass="custom-combo-box" promptText="Chọn tài khoản thụ hưởng..."/>
+
+                            <!-- Recipient Preview Card -->
+                            <HBox fx:id="boxRecipientPreview" styleClass="recipient-preview-pill" alignment="CENTER_LEFT" spacing="12.0" visible="false" managed="false">
+                                <StackPane fx:id="paneRecipientAvatar" styleClass="recipient-avatar-small">
+                                    <Label fx:id="lblRecipientAvatarText" text="PH" styleClass="recipient-avatar-text"/>
+                                </StackPane>
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <Label fx:id="lblRecipientName" text="Tên người nhận" styleClass="recipient-name-bold"/>
+                                    <Label fx:id="lblRecipientAccountType" text="SAVINGS · Đang hoạt động" styleClass="recipient-desc-small"/>
+                                </VBox>
+                                <Label text="● Hợp lệ" styleClass="badge-active-pill"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Field 4: Transfer Amount (Số tiền mặc định) -->
+                        <VBox spacing="4.0">
+                            <Label text="Số tiền mặc định (VND)" styleClass="form-field-label"/>
+                            <HBox alignment="CENTER_LEFT" styleClass="amount-input-box">
+                                <TextField fx:id="txtAmount" promptText="0" styleClass="amount-field-large" HBox.hgrow="ALWAYS"/>
+                                <Label text="VND" styleClass="currency-badge-dark"/>
+                            </HBox>
+
+                            <!-- Quick Amount Chips -->
+                            <HBox spacing="6.0" alignment="CENTER_LEFT">
+                                <Button text="+100K" onAction="#handleQuickAmount100k" styleClass="quick-chip-btn"/>
+                                <Button text="+500K" onAction="#handleQuickAmount500k" styleClass="quick-chip-btn"/>
+                                <Button text="+2M" onAction="#handleQuickAmount2m" styleClass="quick-chip-btn"/>
+                                <Button text="+5M" onAction="#handleQuickAmount5m" styleClass="quick-chip-btn"/>
+                                <Button text="Tất cả" onAction="#handleQuickAmountAll" styleClass="quick-chip-btn-accent"/>
+                            </HBox>
+
+                            <!-- Validation status & Fee estimation -->
+                            <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-padding: 2 0 0 0;">
+                                <Label fx:id="lblFeeCalculation" text="Phí ước tính: 0 VND" styleClass="fee-estimate-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="lblAmountValidation" text="Vui lòng nhập số tiền mẫu" styleClass="validation-hint"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Action Button -->
+                        <VBox spacing="4.0" style="-fx-padding: 2 0 0 0;">
+                            <Button fx:id="btnSaveTemplate" text="Lưu Mẫu Giao Dịch" maxWidth="Infinity" styleClass="btn-save-template-primary" onAction="#handleSaveTemplate"/>
+                            <Label text="Mẫu sẽ được lưu vào danh sách để sử dụng ngay hoặc nhân bản." style="-fx-text-fill: #94A3B8; -fx-font-size: 11px;" alignment="CENTER" maxWidth="Infinity"/>
+                        </VBox>
+                    </VBox>
+
+                    <!-- ──────── CỘT PHẢI: DANH SÁCH MẪU ĐÃ LƯU (ALWAYS GROW) ──────── -->
+                    <VBox styleClass="card" spacing="12.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <StackPane styleClass="icon-circle-purple">
+                                <SVGPath content="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" style="-fx-fill: transparent; -fx-stroke: #7C3AED; -fx-stroke-width: 2;"/>
+                            </StackPane>
+                            <VBox spacing="1.0" HBox.hgrow="ALWAYS">
+                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                    <Label text="Danh Sách Mẫu Đã Lưu" styleClass="card-title"/>
+                                    <Label fx:id="lblTemplateCountBadge" text="3 mẫu" styleClass="template-count-chip"/>
+                                </HBox>
+                                <Label text="Bấm '⚡ Chuyển ngay' để giao dịch tức thì, hoặc 'Sao chép' để nhân bản mẫu." styleClass="card-hint"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Templates List Container -->
+                        <VBox fx:id="boxTemplatesList" spacing="8.0" VBox.vgrow="ALWAYS">
+                            <!-- Dynamic Template Items will be populated here -->
+                        </VBox>
+                    </VBox>
+                </HBox>
+
+                <!-- ==================== 3. KIẾN TRÚC MẪU THIẾT KẾ (DESIGN PATTERNS - CÓ THỂ THU GỌN) ==================== -->
+                <VBox styleClass="card" spacing="10.0">
+                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                        <StackPane styleClass="icon-circle-teal">
+                            <SVGPath content="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" style="-fx-fill: transparent; -fx-stroke: #0D9488; -fx-stroke-width: 2;"/>
+                        </StackPane>
+                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                            <Label text="Kiến Trúc Mẫu Thiết Kế (Design Patterns)" styleClass="card-title"/>
+                            <Label text="Quy trình phối hợp 4 patterns: Prototype, Strategy, Facade và Command" styleClass="card-hint"/>
+                        </VBox>
+                        <Button fx:id="btnTogglePipeline" text="Thu gọn ▲" onAction="#handleTogglePipeline" styleClass="btn-toggle-subtle"/>
+                    </HBox>
+
+                    <VBox fx:id="boxPipelineContent" spacing="8.0">
+                        <HBox spacing="10.0" alignment="CENTER_LEFT">
+                            <!-- Step 1: Prototype -->
+                            <VBox styleClass="pipeline-step-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <Label text="01" styleClass="step-badge-number"/>
+                                    <Label text="Prototype" styleClass="step-badge-title"/>
+                                </HBox>
+                                <Label text="Nhân bản &amp; Tái sử dụng" styleClass="step-main-title"/>
+                                <Label text="Phương thức clone() sinh bản sao giao dịch độc lập nhanh chóng mà không cần nhập lại." wrapText="true" styleClass="step-desc-text"/>
+                            </VBox>
+
+                            <SVGPath content="M9 5l7 7-7 7" style="-fx-fill: transparent; -fx-stroke: #CBD5E1; -fx-stroke-width: 2;"/>
+
+                            <!-- Step 2: Strategy -->
+                            <VBox styleClass="pipeline-step-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <Label text="02" styleClass="step-badge-number"/>
+                                    <Label text="Strategy" styleClass="step-badge-title"/>
+                                </HBox>
+                                <Label text="Tính biểu phí linh hoạt" styleClass="step-main-title"/>
+                                <Label text="FeeStrategy tự động tính phí (Standard: 0.1%, Premium: 0 VND) theo loại tài khoản." wrapText="true" styleClass="step-desc-text"/>
+                            </VBox>
+
+                            <SVGPath content="M9 5l7 7-7 7" style="-fx-fill: transparent; -fx-stroke: #CBD5E1; -fx-stroke-width: 2;"/>
+
+                            <!-- Step 3: Facade -->
+                            <VBox styleClass="pipeline-step-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <Label text="03" styleClass="step-badge-number"/>
+                                    <Label text="Facade" styleClass="step-badge-title"/>
+                                </HBox>
+                                <Label text="Điều phối chuyển khoản" styleClass="step-main-title"/>
+                                <Label text="BankingFacade.transfer() đơn giản hóa quy trình debit, credit, kiểm tra số dư và thông báo." wrapText="true" styleClass="step-desc-text"/>
+                            </VBox>
+
+                            <SVGPath content="M9 5l7 7-7 7" style="-fx-fill: transparent; -fx-stroke: #CBD5E1; -fx-stroke-width: 2;"/>
+
+                            <!-- Step 4: Command -->
+                            <VBox styleClass="pipeline-step-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <Label text="04" styleClass="step-badge-number"/>
+                                    <Label text="Command" styleClass="step-badge-title"/>
+                                </HBox>
+                                <Label text="Đóng gói lệnh &amp; Undo" styleClass="step-main-title"/>
+                                <Label text="TransferCommand quản lý trong Deque stack, hỗ trợ hoàn tác giao dịch khi có sự cố." wrapText="true" styleClass="step-desc-text"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

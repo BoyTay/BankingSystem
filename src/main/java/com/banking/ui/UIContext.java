@@ -6,6 +6,7 @@ import com.banking.model.enums.AccountType;
 import com.banking.pattern.behavioral.AccountObserver;
 import com.banking.pattern.behavioral.TransactionHistory;
 import com.banking.pattern.structural.BankingFacade;
+import com.banking.pattern.creational.TransferTemplate;
 import com.banking.service.AccountService;
 import com.banking.service.NotificationService;
 import com.banking.service.TransactionService;
@@ -136,4 +137,13 @@ public class UIContext {
     public ObservableList<Account> getAccounts() { return accounts; }
     public ObservableList<Transaction> getTransactions() { return transactions; }
     public ObservableList<String> getNotificationLogs() { return notificationLogs; }
+
+    // -- Pending Template for Transfer --------------------
+    private TransferTemplate pendingTransferTemplate;
+    public void setPendingTransferTemplate(TransferTemplate template) { this.pendingTransferTemplate = template; }
+    public TransferTemplate consumePendingTransferTemplate() {
+        TransferTemplate t = this.pendingTransferTemplate;
+        this.pendingTransferTemplate = null;
+        return t;
+    }
 }

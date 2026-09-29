@@ -37,6 +37,7 @@ class NovaBankFxmlTest {
                 shell.show("transfer");
                 shell.show("history");
                 shell.show("dashboard");
+                shell.show("templates");
                 NovaBankShell viewer = new NovaBankShell(new AuthService(),
                         new AuthService.User("viewer", AuthService.Role.VIEWER));
                 Parent page = (Parent) ((StackPane) viewer.getCenter()).getChildren().get(0);
