@@ -15,127 +15,306 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.banking.ui.NovaBankHistoryController"
             prefHeight="920.0" prefWidth="1440.0"
             stylesheets="@novabank.css" styleClass="main-window">
 
-    <!-- Sidebar is now managed centrally by NovaBankShell.java -->
+    <!-- Sidebar is centrally managed by NovaBankShell.java -->
 
-    <!-- ==================== 2. MAIN WORKSPACE ==================== -->
+    <!-- ==================== MAIN WORKSPACE ==================== -->
     <center>
         <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
-            <VBox spacing="24.0" styleClass="content-container">
+            <VBox spacing="14.0" styleClass="content-container">
                 <padding>
-                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                    <Insets top="14.0" right="24.0" bottom="16.0" left="24.0"/>
                 </padding>
 
-                <!-- HEADER WITH EXPORT BUTTON -->
-                <HBox alignment="CENTER_LEFT">
-                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                        <Label text="Transaction history" styleClass="header-greeting"/>
-                        <Label text="Search, filter and export every movement across your accounts." styleClass="header-subtitle"/>
+                <!-- 1. TOP HEADER WITH BREADCRUMB & CONTROLS -->
+                <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+                    <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0" styleClass="header-badge-tag" maxWidth="-Infinity">
+                            <Circle radius="3.0" styleClass="header-badge-tag-dot"/>
+                            <Label text="SAO KÊ &amp; SỔ CÁI BIẾN ĐỘNG" styleClass="header-badge-tag-text"/>
+                        </HBox>
+                        <Label text="Lịch sử giao dịch" styleClass="header-greeting"/>
+                        <Label text="Tra cứu, phân loại chi tiết và kiểm tra biên lai hạch toán số dư thời gian thực." styleClass="header-subtitle"/>
                     </VBox>
 
-                    <!-- Right Controls (Export + Undo + Notification + User Pill) -->
-                    <HBox alignment="CENTER_RIGHT" spacing="14.0">
-                        <Button fx:id="btnUndo" text="↶ Undo Last (Command)" styleClass="btn-danger-flat" onAction="#handleUndo"/>
-                        <Button fx:id="btnExport" text="⤓  Export" styleClass="btn-secondary-flat" onAction="#handleExportCsv"/>
-                        <Button styleClass="icon-btn-round" text="🔔"/>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="user-profile-pill">
+                    <!-- Right Controls (Undo + Export + Bell + User Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <Button fx:id="btnUndo" text="↶ Hoàn tác (0 lệnh)" styleClass="btn-undo-header" onAction="#handleUndo"/>
+                        <Button fx:id="btnExport" text="⤓ Xuất CSV" styleClass="btn-export-header" onAction="#handleExportCsv"/>
+
+                        <StackPane styleClass="icon-btn-round">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="header-bell-icon"/>
+                            <Circle radius="3.5" styleClass="notification-dot-badge" StackPane.alignment="TOP_RIGHT">
+                                <StackPane.margin>
+                                    <Insets top="8.0" right="8.0"/>
+                                </StackPane.margin>
+                            </Circle>
+                        </StackPane>
+
+                        <HBox alignment="CENTER_LEFT" spacing="9.0" styleClass="user-profile-pill">
                             <StackPane styleClass="avatar-circle">
-                                <Label text="AM" styleClass="avatar-text"/>
+                                <Label fx:id="lblProfileAvatar" text="A" styleClass="avatar-text"/>
                             </StackPane>
-                            <VBox spacing="2.0">
-                                <Label text="Current user" styleClass="user-name"/>
-                                <Label text="Local operator" styleClass="user-tier"/>
+                            <VBox spacing="1.0" alignment="CENTER_LEFT">
+                                <Label fx:id="lblProfileName" text="Admin" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Admin" styleClass="user-tier"/>
                             </VBox>
                             <Label text="▾" styleClass="user-chevron"/>
                         </HBox>
                     </HBox>
                 </HBox>
 
-                <!-- ROW 1: 3 KPI CARDS (Money In, Money Out, Pending) -->
-                <HBox spacing="20.0">
+                <!-- 2. HIGH-DEPTH FINTECH KPI CARDS WITH MODERN MULTI-LAYER ICONS -->
+                <HBox spacing="16.0">
 
                     <!-- KPI 1: Money In -->
-                    <VBox styleClass="kpi-metric-card" HBox.hgrow="ALWAYS" spacing="12.0">
+                    <VBox styleClass="kpi-metric-card,kpi-card-in" HBox.hgrow="ALWAYS" spacing="8.0">
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Money in" styleClass="kpi-label" HBox.hgrow="ALWAYS"/>
+                            <VBox spacing="2.0">
+                                <Label text="TIỀN VÀO (INFLOW)" styleClass="kpi-label"/>
+                                <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                    <Label text="● Đã ghi có hệ thống" styleClass="kpi-chip-green"/>
+                                </HBox>
+                            </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <StackPane styleClass="kpi-icon-pill,kpi-pill-green">
-                                <Label text="↙" styleClass="kpi-arrow-green"/>
+                            <StackPane styleClass="kpi-icon-pill-in">
+                                <!-- Incoming Wallet & Coin Flow SVG -->
+                                <SVGPath content="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" stroke="#059669" strokeWidth="2.0" strokeLineCap="ROUND" strokeLineJoin="ROUND" fill="TRANSPARENT"/>
                             </StackPane>
                         </HBox>
                         <Label fx:id="lblMoneyIn" text="0 VND" styleClass="kpi-amount"/>
                     </VBox>
 
                     <!-- KPI 2: Money Out -->
-                    <VBox styleClass="kpi-metric-card" HBox.hgrow="ALWAYS" spacing="12.0">
+                    <VBox styleClass="kpi-metric-card,kpi-card-out" HBox.hgrow="ALWAYS" spacing="8.0">
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Money out" styleClass="kpi-label" HBox.hgrow="ALWAYS"/>
+                            <VBox spacing="2.0">
+                                <Label text="TIỀN RA (OUTFLOW)" styleClass="kpi-label"/>
+                                <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                    <Label text="● Chuyển khoản &amp; Rút" styleClass="kpi-chip-red"/>
+                                </HBox>
+                            </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <StackPane styleClass="kpi-icon-pill,kpi-pill-gray">
-                                <Label text="↗" styleClass="kpi-arrow-gray"/>
+                            <StackPane styleClass="kpi-icon-pill-out">
+                                <!-- Outgoing Card & Payment Transaction SVG -->
+                                <SVGPath content="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" stroke="#DC2626" strokeWidth="2.0" strokeLineCap="ROUND" strokeLineJoin="ROUND" fill="TRANSPARENT"/>
                             </StackPane>
                         </HBox>
                         <Label fx:id="lblMoneyOut" text="0 VND" styleClass="kpi-amount"/>
                     </VBox>
 
-                    <!-- KPI 3: Pending -->
-                    <VBox styleClass="kpi-metric-card" HBox.hgrow="ALWAYS" spacing="12.0">
+                    <!-- KPI 3: Status / Ledger -->
+                    <VBox styleClass="kpi-metric-card,kpi-card-pending" HBox.hgrow="ALWAYS" spacing="8.0">
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Pending" styleClass="kpi-label" HBox.hgrow="ALWAYS"/>
+                            <VBox spacing="2.0">
+                                <Label text="GIAO DỊCH CHỜ &amp; SỔ LỆNH" styleClass="kpi-label"/>
+                                <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                    <Label fx:id="lblPendingCount" text="● 0 giao dịch chờ" styleClass="kpi-chip-blue"/>
+                                </HBox>
+                            </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <StackPane styleClass="kpi-icon-pill,kpi-pill-amber">
-                                <Label text="⏱" styleClass="kpi-arrow-amber"/>
+                            <StackPane styleClass="kpi-icon-pill-pending">
+                                <!-- Security Audit Checkmark Shield SVG -->
+                                <SVGPath content="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="#2563EB" strokeWidth="2.0" strokeLineCap="ROUND" strokeLineJoin="ROUND" fill="TRANSPARENT"/>
                             </StackPane>
                         </HBox>
                         <Label fx:id="lblPendingAmount" text="0 VND" styleClass="kpi-amount"/>
-                        <HBox alignment="CENTER_LEFT" spacing="4.0">
-                            <Label fx:id="lblPendingCount" text="Không có giao dịch chờ" styleClass="kpi-trend-amber"/>
-                        </HBox>
                     </VBox>
 
                 </HBox>
 
-                <!-- ROW 2: SEARCH & TABLE CONTAINER (Main Card) -->
-                <VBox styleClass="card" spacing="16.0">
+                <!-- 3. MAIN WORKSPACE: 2-COLUMN SPLIT VIEW (65% / 35%) -->
+                <HBox spacing="16.0" alignment="TOP_LEFT">
 
-                    <!-- Search Input Row -->
-                    <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="table-search-bar">
-                        <Label text="🔍" styleClass="input-icon"/>
-                        <TextField fx:id="txtSearch" promptText="Search merchant, reference or amount" styleClass="clean-text-input" HBox.hgrow="ALWAYS"/>
-                        <Region HBox.hgrow="NEVER" prefWidth="12.0"/>
-                        <Label fx:id="lblTransactionCount" text="0 transactions" styleClass="tx-count-label"/>
-                    </HBox>
+                    <!-- ==================== LEFT COLUMN: PRO TABLE & PAGINATION ==================== -->
+                    <VBox styleClass="card" spacing="11.0" HBox.hgrow="ALWAYS" minWidth="700.0">
 
-                    <!-- Filter Dropdowns Row -->
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <ComboBox fx:id="cbDateFilter" promptText="Date: All time" styleClass="filter-dropdown-pill"/>
-                        <ComboBox fx:id="cbTypeFilter" promptText="Type: All types" styleClass="filter-dropdown-pill"/>
-                        <ComboBox fx:id="cbAmountFilter" promptText="Amount: Any amount" styleClass="filter-dropdown-pill"/>
-                        <ComboBox fx:id="cbAccountFilter" promptText="Account: All accounts" styleClass="filter-dropdown-pill"/>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <Hyperlink text="Clear filters" styleClass="link-clear-filter" onAction="#handleClearFilters"/>
-                    </HBox>
+                        <!-- Row A: Search Input with SVG Icon & Counter Pill -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="table-search-bar" style="-fx-min-height: 36px; -fx-pref-height: 36px;">
+                            <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#94A3B8" strokeWidth="2.0" strokeLineCap="ROUND" strokeLineJoin="ROUND" fill="TRANSPARENT"/>
+                            <TextField fx:id="txtSearch" promptText="Tìm kiếm theo mã GD, tài khoản, nội dung hoặc số tiền..." styleClass="clean-text-input" HBox.hgrow="ALWAYS"/>
+                            <Region HBox.hgrow="NEVER" prefWidth="8.0"/>
+                            <Label fx:id="lblTransactionCount" text="0 giao dịch" styleClass="tx-count-label"/>
+                        </HBox>
 
-                    <!-- Modern Transactions Table -->
-                    <TableView fx:id="tableTransactions" prefHeight="440.0" styleClass="novabank-table">
-                        <columns>
-                            <TableColumn fx:id="colDate" text="DATE" prefWidth="170.0"/>
-                            <TableColumn fx:id="colTypeAccount" text="TYPE &amp; ACCOUNT" prefWidth="230.0"/>
-                            <TableColumn fx:id="colDescription" text="DESCRIPTION" prefWidth="320.0"/>
-                            <TableColumn fx:id="colStatus" text="STATUS" prefWidth="150.0"/>
-                            <TableColumn fx:id="colAmount" text="AMOUNT" prefWidth="170.0"/>
-                        </columns>
-                        <columnResizePolicy>
-                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                        </columnResizePolicy>
-                    </TableView>
+                        <!-- Row B: Quick Filter Chips (All, Deposit, Withdraw, Transfer, Undo) -->
+                        <HBox alignment="CENTER_LEFT" spacing="6.0">
+                            <Label text="Lọc nhanh:" styleClass="table-header-sub"/>
+                            <Button fx:id="btnChipAll" text="Tất cả" styleClass="quick-filter-chip,quick-filter-chip-active" onAction="#handleChipFilterAll"/>
+                            <Button fx:id="btnChipIn" text="↓ Tiền vào (+)" styleClass="quick-filter-chip" onAction="#handleChipFilterIn"/>
+                            <Button fx:id="btnChipOut" text="↑ Tiền ra (-)" styleClass="quick-filter-chip" onAction="#handleChipFilterOut"/>
+                            <Button fx:id="btnChipTransfer" text="⇄ Chuyển khoản" styleClass="quick-filter-chip" onAction="#handleChipFilterTransfer"/>
+                            <Button fx:id="btnChipUndo" text="↶ Đã hoàn tác" styleClass="quick-filter-chip" onAction="#handleChipFilterUndo"/>
+                        </HBox>
 
-                </VBox>
+                        <!-- Row C: Advanced Filter Dropdowns -->
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <ComboBox fx:id="cbDateFilter" promptText="Thời gian: Tất cả" styleClass="filter-dropdown-pill"/>
+                            <ComboBox fx:id="cbTypeFilter" promptText="Phân loại: Tất cả" styleClass="filter-dropdown-pill"/>
+                            <ComboBox fx:id="cbAmountFilter" promptText="Số tiền: Bất kỳ" styleClass="filter-dropdown-pill"/>
+                            <ComboBox fx:id="cbAccountFilter" promptText="Tài khoản: Tất cả" styleClass="filter-dropdown-pill"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="✕ Đặt lại" styleClass="btn-reset-filter" onAction="#handleClearFilters"/>
+                        </HBox>
+
+                        <!-- Row D: Modern TableView (Height-fit for 8 items, no inner scrollbar) -->
+                        <TableView fx:id="tableTransactions" prefHeight="295.0" styleClass="novabank-table">
+                            <columns>
+                                <TableColumn fx:id="colDate" text="THỜI GIAN" prefWidth="115.0" minWidth="105.0"/>
+                                <TableColumn fx:id="colTypeAccount" text="PHÂN LOẠI &amp; TÀI KHOẢN" prefWidth="195.0" minWidth="180.0"/>
+                                <TableColumn fx:id="colDescription" text="NỘI DUNG GIAO DỊCH" prefWidth="180.0" minWidth="165.0"/>
+                                <TableColumn fx:id="colStatus" text="TRẠNG THÁI" prefWidth="135.0" minWidth="130.0"/>
+                                <TableColumn fx:id="colAmount" text="SỐ TIỀN" prefWidth="135.0" minWidth="125.0"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+
+                        <!-- Row E: Modern Pagination Bar -->
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="pagination-container">
+                            <Label fx:id="lblPaginationInfo" text="Hiển thị 1 - 8 trên 9 giao dịch" styleClass="pagination-info-text"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <HBox alignment="CENTER_RIGHT" spacing="6.0">
+                                <Button fx:id="btnPagePrev" text="◀ Trước" styleClass="btn-page-nav" onAction="#handlePagePrev"/>
+                                <HBox fx:id="boxPageNumbers" alignment="CENTER" spacing="4.0"/>
+                                <Button fx:id="btnPageNext" text="Sau ▶" styleClass="btn-page-nav" onAction="#handlePageNext"/>
+                            </HBox>
+                        </HBox>
+
+                    </VBox>
+
+                    <!-- ==================== RIGHT COLUMN: RATIO WIDGET & LIVE RECEIPT ==================== -->
+                    <VBox spacing="12.0" minWidth="360.0" prefWidth="370.0" maxWidth="390.0">
+
+                        <!-- WIDGET 1: TỶ TRỌNG DÒNG TIỀN (CASHFLOW RATIO) -->
+                        <VBox styleClass="card" spacing="8.0" style="-fx-padding: 12px 16px;">
+                            <HBox alignment="CENTER_LEFT">
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <StackPane styleClass="kpi-icon-pill-pending" style="-fx-min-width: 24px; -fx-min-height: 24px; -fx-max-width: 24px; -fx-max-height: 24px;">
+                                        <SVGPath content="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" stroke="#2563EB" strokeWidth="1.8" fill="TRANSPARENT"/>
+                                    </StackPane>
+                                    <Label text="TỶ TRỌNG DÒNG TIỀN" styleClass="cashflow-stat-title"/>
+                                </HBox>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label text="Thời gian thực" styleClass="kpi-chip-blue" style="-fx-font-size: 9.5px; -fx-padding: 2px 6px;"/>
+                            </HBox>
+
+                            <!-- Dual-colored progress bar -->
+                            <StackPane alignment="CENTER_LEFT">
+                                <Region styleClass="cashflow-progress-track" maxWidth="Infinity"/>
+                                <Region fx:id="barInflowRatio" styleClass="cashflow-progress-inflow" prefWidth="280.0"/>
+                            </StackPane>
+
+                            <!-- Sub percentages -->
+                            <HBox alignment="CENTER_LEFT">
+                                <Label fx:id="lblInflowPercent" text="● Vào: 98.0%" styleClass="kpi-chip-green" style="-fx-font-size: 10px; -fx-padding: 2px 6px;"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="lblOutflowPercent" text="● Ra: 2.0%" styleClass="kpi-chip-red" style="-fx-font-size: 10px; -fx-padding: 2px 6px;"/>
+                            </HBox>
+
+                            <!-- Net cashflow result box -->
+                            <VBox styleClass="cashflow-net-badge" spacing="1.0" style="-fx-padding: 6px 10px;">
+                                <Label text="DÒNG TIỀN RÒNG (NET CASHFLOW)" styleClass="receipt-row-label" style="-fx-font-size: 9.5px;"/>
+                                <Label fx:id="lblNetCashflow" text="+98,984,934 VND" style="-fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #059669;"/>
+                            </VBox>
+                        </VBox>
+
+                        <!-- WIDGET 2: LIVE TRANSACTION RECEIPT INSPECTOR -->
+                        <VBox styleClass="receipt-panel-live" spacing="9.0" style="-fx-padding: 14px 16px;">
+                            <!-- Receipt Header -->
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <StackPane styleClass="receipt-header-icon" style="-fx-min-width: 32px; -fx-min-height: 32px; -fx-max-width: 32px; -fx-max-height: 32px;">
+                                    <SVGPath content="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="#2563EB" strokeWidth="1.8" fill="TRANSPARENT"/>
+                                </StackPane>
+                                <VBox spacing="1.0">
+                                    <Label text="BIÊN LAI TRỰC TIẾP" styleClass="summary-header-sub" style="-fx-text-fill: #2563EB; -fx-font-weight: 800; -fx-font-size: 9.5px;"/>
+                                    <Label text="Chi tiết giao dịch" style="-fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: #0F172A;"/>
+                                </VBox>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="lblLiveStatusBadge" text="● Thành công" styleClass="badge-status-success"/>
+                            </HBox>
+
+                            <!-- Amount Banner -->
+                            <VBox styleClass="receipt-live-amount-box" spacing="2.0" style="-fx-padding: 8px 10px;">
+                                <Label text="SỐ TIỀN GIAO DỊCH" styleClass="receipt-row-label" style="-fx-font-size: 9.5px;"/>
+                                <Label fx:id="lblLiveAmount" text="0 VND" styleClass="receipt-amount-large" style="-fx-font-size: 18px;"/>
+                            </VBox>
+
+                            <!-- Key-Value Rows -->
+                            <VBox spacing="6.0">
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Mã giao dịch (TxID):" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <HBox alignment="CENTER_RIGHT" spacing="4.0">
+                                        <Label fx:id="lblLiveTxId" text="TX-..." styleClass="tx-hash-badge"/>
+                                        <Button text="📋" styleClass="btn-icon-copy" onAction="#handleCopyTxId"/>
+                                    </HBox>
+                                </HBox>
+
+                                <Region styleClass="receipt-divider"/>
+
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Thời gian thực hiện:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveTime" text="--" styleClass="receipt-row-value" style="-fx-font-size: 11.5px;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Loại giao dịch:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveType" text="--" styleClass="receipt-row-value" style="-fx-font-size: 11.5px;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Tài khoản nguồn:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveFrom" text="--" styleClass="receipt-row-value" style="-fx-font-size: 11.5px;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Tài khoản đích:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveTo" text="--" styleClass="receipt-row-value" style="-fx-font-size: 11.5px;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT">
+                                    <Label text="Phí giao dịch:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveFee" text="0 VND" styleClass="receipt-row-value" style="-fx-text-fill: #059669; -fx-font-size: 11.5px;"/>
+                                </HBox>
+
+                                <HBox alignment="TOP_LEFT">
+                                    <Label text="Nội dung:" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveDesc" text="--" styleClass="receipt-row-value" wrapText="true" maxWidth="190.0" alignment="CENTER_RIGHT" style="-fx-font-size: 11px;"/>
+                                </HBox>
+
+                                <HBox fx:id="rowLiveRelated" alignment="CENTER_LEFT" visible="false" managed="false">
+                                    <Label text="Gốc (Hoàn tác):" styleClass="receipt-row-label" style="-fx-font-size: 11px;"/>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="lblLiveRelatedId" text="--" styleClass="receipt-row-value" style="-fx-text-fill: #7C3AED; -fx-font-size: 11px;"/>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Bottom Action Buttons -->
+                            <HBox spacing="8.0" alignment="CENTER" style="-fx-padding: 4px 0 0 0;">
+                                <Button text="📋 Sao chép mã" styleClass="btn-receipt-copy" onAction="#handleCopyTxId" maxWidth="Infinity" HBox.hgrow="ALWAYS" style="-fx-padding: 6px 10px; -fx-font-size: 11.5px;"/>
+                                <Button fx:id="btnLiveUndo" text="↶ Hoàn tác" styleClass="btn-receipt-undo" onAction="#handleUndoSelected" maxWidth="Infinity" HBox.hgrow="ALWAYS" style="-fx-padding: 6px 10px; -fx-font-size: 11.5px;"/>
+                            </HBox>
+                        </VBox>
+
+
+                    </VBox>
+
+                </HBox>
 
             </VBox>
         </ScrollPane>
