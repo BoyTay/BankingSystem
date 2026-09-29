@@ -9,6 +9,17 @@ if not defined JAVA_HOME (
 )
 
 if not exist "%JAVA_HOME%\bin\javac.exe" (
+    for /d %%D in ("C:\Program Files\Eclipse Adoptium\jdk*") do (
+        if exist "%%D\bin\javac.exe" set "JAVA_HOME=%%D"
+    )
+)
+if not exist "%JAVA_HOME%\bin\javac.exe" (
+    for /d %%D in ("C:\Program Files\Java\jdk*") do (
+        if exist "%%D\bin\javac.exe" set "JAVA_HOME=%%D"
+    )
+)
+
+if not exist "%JAVA_HOME%\bin\javac.exe" (
     echo [LOI] Hay dat JAVA_HOME den thu muc JDK 17+ hoac them javac vao PATH.
     pause
     exit /b 1
