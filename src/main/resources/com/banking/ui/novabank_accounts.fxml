@@ -6,12 +6,17 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.banking.ui.NovaBankAccountsController"
@@ -22,162 +27,253 @@
     <!-- ==================== 2. MAIN WORKSPACE ==================== -->
     <center>
         <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
-            <VBox spacing="24.0" styleClass="content-container">
+            <VBox spacing="14.0" styleClass="content-container">
                 <padding>
-                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                    <Insets top="14.0" right="24.0" bottom="16.0" left="24.0"/>
                 </padding>
 
-                <ComboBox fx:id="cbAllAccounts" promptText="Chon tai khoan" maxWidth="Infinity" styleClass="filter-dropdown-pill"/>
+                <!-- HEADER -->
+                <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+                    <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0" styleClass="header-badge-tag" maxWidth="-Infinity">
+                            <Circle radius="3.0" styleClass="header-badge-tag-dot"/>
+                            <Label text="DANH SÁCH TÀI KHOẢN" styleClass="header-badge-tag-text"/>
+                        </HBox>
+                        <Label text="Quản lý tài khoản &amp; Hạn mức" styleClass="header-greeting"/>
+                        <Label text="Xem chi tiết các gói tài khoản, phân bổ số dư và quản trị trạng thái an ninh thẻ." styleClass="header-subtitle"/>
+                    </VBox>
 
-                <!-- ROW 1: TOP HORIZONTAL ACCOUNT CARDS (Everyday Standard, Nova Savings, Premium Reserve) -->
-                <HBox fx:id="boxAccountCards" spacing="20.0">
+                    <!-- Right Controls (Search with Shortcut, Notification Bell with Red Dot, User Profile Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0" prefWidth="290.0">
+                            <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
+                            <TextField promptText="Tìm tài khoản..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <Label text="Ctrl K" styleClass="search-shortcut-badge" minWidth="-Infinity"/>
+                        </HBox>
 
-                    <!-- Card 1: Everyday Standard (Selected) -->
-                    <VBox fx:id="cardStandard" styleClass="account-overview-card,account-card-selected" HBox.hgrow="ALWAYS" spacing="12.0" onMouseClicked="#selectStandardAccount">
+                        <StackPane styleClass="icon-btn-round">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="header-bell-icon"/>
+                            <Circle radius="3.5" styleClass="notification-dot-badge" StackPane.alignment="TOP_RIGHT">
+                                <StackPane.margin>
+                                    <Insets top="8.0" right="8.0"/>
+                                </StackPane.margin>
+                            </Circle>
+                        </StackPane>
+
+                        <HBox alignment="CENTER_LEFT" spacing="9.0" styleClass="user-profile-pill">
+                            <StackPane styleClass="avatar-circle">
+                                <Label fx:id="lblProfileAvatar" text="A" styleClass="avatar-text"/>
+                            </StackPane>
+                            <VBox spacing="1.0" alignment="CENTER_LEFT">
+                                <Label fx:id="lblProfileName" text="Admin" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Admin" styleClass="user-tier"/>
+                            </VBox>
+                            <Label text="▾" styleClass="user-chevron"/>
+                        </HBox>
+                    </HBox>
+                </HBox>
+
+                <ComboBox fx:id="cbAllAccounts" promptText="Chọn tài khoản..." maxWidth="Infinity" styleClass="filter-dropdown-pill"/>
+
+                <!-- ROW 1: TOP HORIZONTAL VIRTUAL ACCOUNT CARDS -->
+                <HBox fx:id="boxAccountCards" spacing="16.0">
+
+                    <!-- Card 1: Everyday Standard -->
+                    <VBox fx:id="cardStandard" styleClass="account-overview-card,account-card-selected" HBox.hgrow="ALWAYS" spacing="10.0" onMouseClicked="#selectStandardAccount">
                         <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <StackPane styleClass="virtual-card-chip"/>
                             <StackPane styleClass="acc-color-indicator,indicator-green"/>
-                            <VBox spacing="2.0">
-                                <Label text="Everyday Standard" styleClass="acc-title-bold"/>
+                            <VBox spacing="1.0">
+                                <Label text="Tài khoản Tiêu chuẩn" styleClass="acc-title-bold"/>
                                 <Label text="STANDARD" styleClass="acc-sub-num"/>
                             </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label text="VND" styleClass="status-badge-active"/>
                         </HBox>
-                        <VBox spacing="4.0">
-                            <Label text="Available balance" styleClass="acc-meta-label"/>
+                        <VBox spacing="2.0">
+                            <Label text="Số dư khả dụng" styleClass="acc-meta-label"/>
                             <Label fx:id="lblCard1Balance" text="0 VND" styleClass="acc-balance-large"/>
                         </VBox>
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Tài khoản chuẩn" styleClass="acc-meta-label"/>
+                            <Label fx:id="lblCard1Masked" text="•••• 1001" styleClass="acc-card-number-mono"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="lblCard1Selected" text="Selected" styleClass="acc-selected-badge"/>
+                            <Label fx:id="lblCard1Selected" text="✓ Đang chọn" styleClass="acc-selected-badge"/>
                         </HBox>
                     </VBox>
 
                     <!-- Card 2: Nova Savings -->
-                    <VBox fx:id="cardSavings" styleClass="account-overview-card" HBox.hgrow="ALWAYS" spacing="12.0" onMouseClicked="#selectSavingsAccount">
+                    <VBox fx:id="cardSavings" styleClass="account-overview-card" HBox.hgrow="ALWAYS" spacing="10.0" onMouseClicked="#selectSavingsAccount">
                         <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <StackPane styleClass="virtual-card-chip"/>
                             <StackPane styleClass="acc-color-indicator,indicator-blue"/>
-                            <VBox spacing="2.0">
-                                <Label text="Nova Savings" styleClass="acc-title-bold"/>
+                            <VBox spacing="1.0">
+                                <Label text="Tài khoản Tiết kiệm" styleClass="acc-title-bold"/>
                                 <Label text="SAVINGS" styleClass="acc-sub-num"/>
                             </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label text="VND" styleClass="status-badge-active"/>
                         </HBox>
-                        <VBox spacing="4.0">
-                            <Label text="Available balance" styleClass="acc-meta-label"/>
+                        <VBox spacing="2.0">
+                            <Label text="Số dư khả dụng" styleClass="acc-meta-label"/>
                             <Label fx:id="lblCard2Balance" text="0 VND" styleClass="acc-balance-large"/>
                         </VBox>
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Tài khoản tiết kiệm" styleClass="acc-meta-label"/>
+                            <Label fx:id="lblCard2Masked" text="•••• 1002" styleClass="acc-card-number-mono"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Lãi suất 6.5%/năm" styleClass="acc-meta-label"/>
                         </HBox>
                     </VBox>
 
                     <!-- Card 3: Premium Reserve -->
-                    <VBox fx:id="cardPremium" styleClass="account-overview-card" HBox.hgrow="ALWAYS" spacing="12.0" onMouseClicked="#selectPremiumAccount">
+                    <VBox fx:id="cardPremium" styleClass="account-overview-card" HBox.hgrow="ALWAYS" spacing="10.0" onMouseClicked="#selectPremiumAccount">
                         <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <StackPane styleClass="virtual-card-chip"/>
                             <StackPane styleClass="acc-color-indicator,indicator-amber"/>
-                            <VBox spacing="2.0">
-                                <Label text="Premium Reserve" styleClass="acc-title-bold"/>
+                            <VBox spacing="1.0">
+                                <Label text="Tài khoản Đặc quyền" styleClass="acc-title-bold"/>
                                 <Label text="PREMIUM" styleClass="acc-sub-num"/>
                             </VBox>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label fx:id="lblCard3Status" text="—" styleClass="status-badge-active"/>
                         </HBox>
-                        <VBox spacing="4.0">
-                            <Label text="Available balance" styleClass="acc-meta-label"/>
+                        <VBox spacing="2.0">
+                            <Label text="Số dư khả dụng" styleClass="acc-meta-label"/>
                             <Label fx:id="lblCard3Balance" text="0 VND" styleClass="acc-balance-large"/>
                         </VBox>
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="Tài khoản cao cấp" styleClass="acc-meta-label"/>
+                            <Label fx:id="lblCard3Masked" text="•••• 1003" styleClass="acc-card-number-mono"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Miễn 100% phí chuyển" styleClass="acc-meta-label"/>
                         </HBox>
                     </VBox>
 
                 </HBox>
 
                 <!-- ROW 2: DETAILS WORKSPACE (Left 65% + Right 35%) -->
-                <HBox spacing="24.0">
+                <HBox spacing="16.0">
 
-                    <!-- LEFT COLUMN: Account Details + Account Settings -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="24.0">
+                    <!-- LEFT COLUMN: Account Details + Quick Action -->
+                    <VBox HBox.hgrow="ALWAYS" spacing="12.0">
 
                         <!-- Account Details Card -->
-                        <VBox styleClass="card" spacing="18.0">
+                        <VBox styleClass="card" spacing="12.0">
                             <HBox alignment="CENTER_LEFT">
-                                <VBox spacing="2.0">
-                                    <Label fx:id="lblDetailAccountTitle" text="Everyday Standard" styleClass="transfer-form-headline"/>
-                                    <Label fx:id="lblDetailAccountDesc" text="Primary checking account" styleClass="card-hint"/>
+                                <VBox spacing="1.0">
+                                    <Label fx:id="lblDetailAccountTitle" text="Tài khoản Tiêu chuẩn" styleClass="transfer-form-headline" style="-fx-font-size: 15px;"/>
+                                    <Label fx:id="lblDetailAccountDesc" text="Tài khoản thanh toán chính dùng cho giao dịch hàng ngày" styleClass="card-hint"/>
                                 </VBox>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="lblDetailStatusBadge" text="● Active" styleClass="status-badge-active"/>
+                                <Label fx:id="lblDetailStatusBadge" text="● Đang hoạt động" styleClass="status-badge-active"/>
                             </HBox>
 
                             <!-- Striped Detail Rows -->
                             <VBox styleClass="details-striped-box">
                                 <!-- Row 1 -->
-                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row">
-                                    <Label text="Account holder" styleClass="summary-label" prefWidth="180.0"/>
+                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row" style="-fx-padding: 8px 12px;">
+                                    <Label text="Chủ tài khoản" styleClass="summary-label" prefWidth="170.0"/>
                                     <Label fx:id="lblDetailHolder" text="?" styleClass="summary-value" HBox.hgrow="ALWAYS"/>
                                 </HBox>
                                 <!-- Row 2 -->
-                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row">
-                                    <Label text="Account number" styleClass="summary-label" prefWidth="180.0"/>
+                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row" style="-fx-padding: 8px 12px;">
+                                    <Label text="Số tài khoản" styleClass="summary-label" prefWidth="170.0"/>
                                     <Label fx:id="lblDetailNumber" text="?" styleClass="summary-value" HBox.hgrow="ALWAYS"/>
                                     <Button text="📋" styleClass="btn-icon-copy" onAction="#copyAccountNumber"/>
                                 </HBox>
-                                </VBox>
+                                <!-- Row 3: Strategy Pattern Info -->
+                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row" style="-fx-padding: 8px 12px;">
+                                    <Label text="Biểu phí (Strategy)" styleClass="summary-label" prefWidth="170.0"/>
+                                    <Label fx:id="lblDetailFeeStrategy" text="StandardFee (0.1%/giao dịch)" styleClass="summary-value" style="-fx-text-fill: #2563EB;" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <!-- Row 4: Daily Limit -->
+                                <HBox alignment="CENTER_LEFT" styleClass="detail-striped-row" style="-fx-padding: 8px 12px;">
+                                    <Label text="Hạn mức ngày" styleClass="summary-label" prefWidth="170.0"/>
+                                    <Label fx:id="lblDetailDailyLimit" text="50,000,000 VND / ngày" styleClass="summary-value" style="-fx-text-fill: #059669;" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                            </VBox>
 
                             <!-- 3 Mini Stats -->
-                            <HBox spacing="14.0">
-                                <VBox styleClass="mini-stat-card" HBox.hgrow="ALWAYS" spacing="4.0">
-                                    <Label text="Current balance" styleClass="mini-stat-label"/>
-                                    <Label fx:id="lblStatCurrentBalance" text="0 VND" styleClass="mini-stat-value"/>
+                            <HBox spacing="10.0">
+                                <VBox styleClass="mini-stat-card" HBox.hgrow="ALWAYS" spacing="2.0" style="-fx-padding: 8px 12px;">
+                                    <Label text="Số dư thực tế" styleClass="mini-stat-label"/>
+                                    <Label fx:id="lblStatCurrentBalance" text="0 VND" styleClass="mini-stat-value" style="-fx-font-size: 15px;"/>
                                 </VBox>
-                                <VBox styleClass="mini-stat-card" HBox.hgrow="ALWAYS" spacing="4.0">
-                                    <Label text="Available to spend" styleClass="mini-stat-label"/>
-                                    <Label fx:id="lblStatAvailableSpend" text="0 VND" styleClass="mini-stat-value"/>
+                                <VBox styleClass="mini-stat-card" HBox.hgrow="ALWAYS" spacing="2.0" style="-fx-padding: 8px 12px;">
+                                    <Label text="Hạn mức khả dụng" styleClass="mini-stat-label"/>
+                                    <Label fx:id="lblStatAvailableSpend" text="0 VND" styleClass="mini-stat-value" style="-fx-font-size: 15px;"/>
                                 </VBox>
-
+                                <VBox styleClass="mini-stat-card" alignment="CENTER" spacing="4.0" style="-fx-padding: 8px 12px;">
+                                    <Label text="Thao tác" styleClass="mini-stat-label"/>
+                                    <Button text="⚡ Chuyển tiền" styleClass="btn-action-small" onAction="#handleNavTransfer"/>
+                                </VBox>
                             </HBox>
                         </VBox>
 
-                        </VBox>
+                    </VBox>
 
                     <!-- RIGHT COLUMN: Statements Card + Security Lock Card (State Pattern) -->
-                    <VBox prefWidth="420.0" spacing="24.0">
+                    <VBox prefWidth="410.0" spacing="12.0">
 
                         <!-- Statements Download Card -->
-                        <VBox styleClass="card" spacing="16.0">
+                        <VBox styleClass="card" spacing="10.0">
                             <HBox alignment="CENTER_LEFT">
                                 <VBox spacing="2.0" HBox.hgrow="ALWAYS">
-                                    <Label text="Statements" styleClass="card-title"/>
-                                    <Label text="Giao dich thuc tu SQLite" styleClass="card-hint"/>
+                                    <Label text="Sao Kê &amp; Sổ Cái Giao Dịch" styleClass="card-title"/>
+                                    <Label text="Dữ liệu thời gian thực từ cơ sở dữ liệu NovaBank" styleClass="card-hint"/>
                                 </VBox>
                                 <Label text="📄" styleClass="tx-icon"/>
                             </HBox>
 
-                            <Button text="Xuat lich su tai khoan (CSV)" styleClass="btn-secondary-flat" maxWidth="Infinity" onAction="#handleDownloadStatement"/>
+                            <Button text="⤓ Xuất sao kê tài khoản (CSV)" styleClass="btn-export-header" maxWidth="Infinity" onAction="#handleDownloadStatement"/>
                         </VBox>
 
                         <!-- Security & State Pattern Card (Lock / Unlock Card) -->
-                        <VBox styleClass="security-lock-dark-card" spacing="16.0">
+                        <VBox styleClass="security-lock-dark-card" spacing="12.0">
                             <HBox alignment="CENTER_LEFT" spacing="12.0">
                                 <StackPane styleClass="security-shield-pill">
                                     <Label text="🛡" styleClass="shield-icon"/>
                                 </StackPane>
                                 <VBox spacing="2.0" HBox.hgrow="ALWAYS">
-                                    <Label fx:id="lblSecurityLockTitle" text="Need to lock this account?" styleClass="security-dark-title"/>
-                                    <Label fx:id="lblSecurityLockDesc" text="Restrict outgoing payments instantly." styleClass="security-dark-desc"/>
+                                    <Label fx:id="lblSecurityLockTitle" text="An Toàn &amp; Trạng Thái Thẻ" styleClass="security-dark-title"/>
+                                    <Label fx:id="lblSecurityLockDesc" text="Bảo vệ bởi State Pattern. Khóa tạm thời khi phát hiện rủi ro." styleClass="security-dark-desc"/>
                                 </VBox>
                             </HBox>
 
-                            <Button fx:id="btnToggleLock" text="🔒  Manage account access" styleClass="btn-white-manage-access" maxWidth="Infinity" onAction="#handleToggleAccountState"/>
+                            <Button fx:id="btnToggleLock" text="🔒 Tạm khóa tài khoản (LockedState)" styleClass="btn-white-manage-access" maxWidth="Infinity" onAction="#handleToggleAccountState"/>
                         </VBox>
 
                     </VBox>
 
                 </HBox>
+
+                <!-- ROW 3: RECENT TRANSACTIONS FOR THIS ACCOUNT (LẤP ĐẦY KHOẢNG TRỐNG) -->
+                <VBox styleClass="card" spacing="10.0">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <StackPane styleClass="icon-circle-blue">
+                            <SVGPath content="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" style="-fx-fill: transparent; -fx-stroke: #2563EB; -fx-stroke-width: 2.0; -fx-stroke-linecap: round;"/>
+                        </StackPane>
+                        <VBox spacing="1.0" HBox.hgrow="ALWAYS">
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <Label text="Biến Động Số Dư Gần Nhất Của Tài Khoản Này" styleClass="card-title"/>
+                                <Label fx:id="lblTxCountForAccount" text="0 giao dịch" styleClass="template-count-chip"/>
+                            </HBox>
+                            <Label text="5 giao dịch mới nhất được hạch toán trực tiếp trên tài khoản đang chọn" styleClass="card-hint"/>
+                        </VBox>
+                        <Button text="Xem toàn bộ sổ cái →" onAction="#handleNavTransactions" styleClass="btn-link-subtle"/>
+                    </HBox>
+
+                    <TableView fx:id="tableRecentAccountTx" prefHeight="185.0" styleClass="novabank-table">
+                        <columns>
+                            <TableColumn fx:id="colRecentDate" text="THỜI GIAN" prefWidth="135.0"/>
+                            <TableColumn fx:id="colRecentType" text="LOẠI GIAO DỊCH" prefWidth="175.0"/>
+                            <TableColumn fx:id="colRecentDesc" text="ĐỐI TÁC / NỘI DUNG" prefWidth="270.0"/>
+                            <TableColumn fx:id="colRecentAmount" text="SỐ TIỀN" prefWidth="140.0"/>
+                            <TableColumn fx:id="colRecentStatus" text="TRẠNG THÁI" prefWidth="135.0"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+                </VBox>
 
             </VBox>
         </ScrollPane>
