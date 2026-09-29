@@ -74,7 +74,7 @@ public final class NovaBankShell extends BorderPane {
         addButton(navMenu, "Overview", "dashboard", "M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z");
         if (user.role() != AuthService.Role.VIEWER) {
             addButton(navMenu, "Transfer & Pay", "transfer", "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4");
-            addButton(navMenu, "Transfer templates", "templates", "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4");
+            addButton(navMenu, "Transfer templates", "templates", "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z");
             addButton(navMenu, "Cash", "cash", "M12 6v6m0 0v6m0-6h6m-6 0H6");
         }
         addButton(navMenu, "Transactions", "history", "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z");
@@ -83,7 +83,7 @@ public final class NovaBankShell extends BorderPane {
         // Admin Menu
         if (user.role() == AuthService.Role.ADMIN) {
             Label adminLabel = new Label("ADMIN TOOLS");
-            adminLabel.setStyle("-fx-text-fill: #64748B; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 10 0 0 10;");
+            adminLabel.setStyle("-fx-text-fill: #9BB0CC; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 10 0 0 10;");
             navMenu.getChildren().add(adminLabel);
             addButton(navMenu, "Users", "users", "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z");
             addButton(navMenu, "Proxy Demo", "proxy", "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z");
@@ -110,7 +110,7 @@ public final class NovaBankShell extends BorderPane {
         Button button = new Button(label);
         javafx.scene.shape.SVGPath path = new javafx.scene.shape.SVGPath();
         path.setContent(svgData);
-        path.setStyle("-fx-stroke: #94A3B8; -fx-stroke-width: 2px; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent;");
+        path.setStyle("-fx-stroke: #9BB0CC; -fx-stroke-width: 2px; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent;");
         button.setGraphic(path);
         button.setGraphicTextGap(12);
         button.getStyleClass().add("nav-item");
@@ -123,7 +123,7 @@ public final class NovaBankShell extends BorderPane {
         Button button = new Button(label);
         javafx.scene.shape.SVGPath path = new javafx.scene.shape.SVGPath();
         path.setContent(svgData);
-        path.setStyle("-fx-stroke: #94A3B8; -fx-stroke-width: 2px; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent;");
+        path.setStyle("-fx-stroke: #9BB0CC; -fx-stroke-width: 2px; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; -fx-fill: transparent;");
         button.setGraphic(path);
         button.setGraphicTextGap(12);
         button.getStyleClass().add("nav-item");
@@ -155,9 +155,8 @@ public final class NovaBankShell extends BorderPane {
 
     private Parent createPage(String key) {
         return switch (key) {
-            case "dashboard", "accounts", "transfer", "history" -> loadFxml(key);
-            case "cash" -> scroll(new DepositWithdrawView());
-            case "templates" -> scroll(new TransferView());
+            case "dashboard", "accounts", "transfer", "history", "templates" -> loadFxml(key);
+            case "cash" -> scroll(new DepositWithdrawView(user));
             case "open" -> scroll(new AccountView());
             case "users" -> scroll(new UserView(auth));
             case "profile" -> scroll(new ProfileView(auth, user));
@@ -181,8 +180,15 @@ public final class NovaBankShell extends BorderPane {
             if (controller instanceof NovaBankNavigable navigable) navigable.setNavigator(this::show);
             if (controller instanceof NovaBankDashboardController dashboard) dashboard.setUser(user);
             if (controller instanceof NovaBankTransferController transfer) transfer.setUser(user);
-            if (controller instanceof NovaBankAccountsController accounts) accounts.setRole(user.role());
-            if (controller instanceof NovaBankHistoryController history) history.setRole(user.role());
+            if (controller instanceof NovaBankTemplatesController templates) templates.setUser(user);
+            if (controller instanceof NovaBankAccountsController accounts) {
+                accounts.setRole(user.role());
+                accounts.setUser(user);
+            }
+            if (controller instanceof NovaBankHistoryController history) {
+                history.setRole(user.role());
+                history.setUser(user);
+            }
             if (user.role() == AuthService.Role.VIEWER) {
                 for (Node node : root.lookupAll(".nav-item")) {
                     if (node instanceof Button button && button.getText().contains("Transfer")) {
