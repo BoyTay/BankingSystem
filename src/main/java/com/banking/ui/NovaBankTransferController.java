@@ -4,6 +4,8 @@ import com.banking.model.Account;
 import com.banking.model.Money;
 import com.banking.model.Transaction;
 import com.banking.model.enums.AccountStatus;
+import com.banking.pattern.creational.TransferTemplate;
+import com.banking.pattern.creational.TransferTemplate;
 import com.banking.service.AuthService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -208,6 +210,11 @@ public class NovaBankTransferController implements Initializable, NovaBankNaviga
     }
 
     private void refreshData() {
+        TransferTemplate pending = ctx.consumePendingTransferTemplate();
+        if (pending != null) {
+            applyTemplate(pending);
+            return;
+        }
         Account currentFrom = cbFromAccount.getValue();
         Account currentTo = cbToAccount.getValue();
 
@@ -391,5 +398,24 @@ public class NovaBankTransferController implements Initializable, NovaBankNaviga
     private void hideError() {
         errorBanner.setVisible(false);
         errorBanner.setManaged(false);
+    }
+
+    public void applyTemplate(TransferTemplate template) {
+        if (template == null) return;
+        List<Account> accounts = ctx.getAccounts();
+        cbFromAccount.getItems().setAll(accounts);
+        cbToAccount.getItems().setAll(accounts);
+
+        accounts.stream().filter(a -> a.getAccountNumber().equals(template.getFromAccountNumber()))
+                .findFirst().ifPresent(cbFromAccount::setValue);
+
+        accounts.stream().filter(a -> a.getAccountNumber().equals(template.getToAccountNumber()))
+                .findFirst().ifPresent(cbToAccount::setValue);
+
+        txtSendAmount.setText(String.valueOf((long) template.getAmount()));
+        if (txtReference != null) {
+            txtReference.setText(template.getDescription());
+        }
+        updateCalculations();
     }
 }

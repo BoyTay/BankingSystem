@@ -31,36 +31,46 @@
     <!-- ==================== 2. MAIN WORKSPACE ==================== -->
     <center>
         <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
-            <VBox spacing="24.0" styleClass="content-container">
+            <VBox spacing="14.0" styleClass="content-container">
                 <padding>
-                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                    <Insets top="14.0" right="24.0" bottom="16.0" left="24.0"/>
                 </padding>
 
                 <!-- HEADER -->
-                <HBox alignment="CENTER_LEFT">
-                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                        <Label fx:id="lblGreeting" text="Xin chao" styleClass="header-greeting"/>
+                <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+                    <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0" styleClass="header-badge-tag" maxWidth="-Infinity">
+                            <Circle radius="3.0" styleClass="header-badge-tag-dot"/>
+                            <Label text="LIVE OVERVIEW" styleClass="header-badge-tag-text"/>
+                        </HBox>
+                        <Label fx:id="lblGreeting" text="Welcome back, Admin" styleClass="header-greeting"/>
                         <Label text="Here's what's happening with your money today." styleClass="header-subtitle"/>
                     </VBox>
 
-                    <!-- Right Controls (Search, Notification + User Profile Pill) -->
-                    <HBox alignment="CENTER_RIGHT" spacing="16.0">
-                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0">
+                    <!-- Right Controls (Search with Shortcut, Notification Bell with Red Dot, User Profile Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0" prefWidth="290.0">
                             <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
-                            <TextField promptText="Search..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <TextField promptText="Tìm kiếm..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <Label text="Ctrl K" styleClass="search-shortcut-badge" minWidth="-Infinity"/>
                         </HBox>
 
-                        <StackPane styleClass="icon-btn-round" style="-fx-pref-width: 42px; -fx-pref-height: 42px; -fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 50%; -fx-background-radius: 50%;">
-                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="svg-icon" style="-fx-stroke: #1E293B;"/>
+                        <StackPane styleClass="icon-btn-round">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="header-bell-icon"/>
+                            <Circle radius="3.5" styleClass="notification-dot-badge" StackPane.alignment="TOP_RIGHT">
+                                <StackPane.margin>
+                                    <Insets top="8.0" right="8.0"/>
+                                </StackPane.margin>
+                            </Circle>
                         </StackPane>
 
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="user-profile-pill">
+                        <HBox alignment="CENTER_LEFT" spacing="9.0" styleClass="user-profile-pill">
                             <StackPane styleClass="avatar-circle">
-                                <Label fx:id="lblProfileAvatar" text="U" styleClass="avatar-text"/>
+                                <Label fx:id="lblProfileAvatar" text="A" styleClass="avatar-text"/>
                             </StackPane>
-                            <VBox spacing="2.0">
-                                <Label fx:id="lblProfileName" text="User" styleClass="user-name"/>
-                                <Label fx:id="lblProfileRole" text="Role" styleClass="user-tier"/>
+                            <VBox spacing="1.0" alignment="CENTER_LEFT">
+                                <Label fx:id="lblProfileName" text="Admin" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Admin" styleClass="user-tier"/>
                             </VBox>
                             <Label text="▾" styleClass="user-chevron"/>
                         </HBox>
@@ -68,9 +78,9 @@
                 </HBox>
 
                 <!-- ROW 1: Total Balance Card (Navy Gradient) + Quick Actions -->
-                <HBox spacing="20.0">
+                <HBox spacing="16.0">
                     <!-- Total Balance Card -->
-                    <VBox styleClass="balance-card" HBox.hgrow="ALWAYS" prefHeight="175.0" spacing="16.0">
+                    <VBox styleClass="balance-card" HBox.hgrow="ALWAYS" prefHeight="135.0" spacing="10.0">
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Total balance" styleClass="balance-title" HBox.hgrow="ALWAYS"/>
                             <Region HBox.hgrow="ALWAYS"/>
@@ -86,13 +96,13 @@
                     </VBox>
 
                     <!-- Quick Actions Card -->
-                    <VBox styleClass="card" prefWidth="440.0" spacing="14.0">
+                    <VBox styleClass="card" prefWidth="440.0" spacing="10.0">
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Quick actions" styleClass="card-title" HBox.hgrow="ALWAYS"/>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label text="Move money in seconds" styleClass="card-hint"/>
                         </HBox>
-                        <HBox spacing="12.0" alignment="CENTER">
+                        <HBox spacing="10.0" alignment="CENTER">
                             <!-- Action 1: Transfer -->
                             <VBox styleClass="quick-action-btn" HBox.hgrow="ALWAYS" alignment="CENTER" onMouseClicked="#handleQuickTransfer">
                                 <StackPane styleClass="action-icon-pill,icon-green">
@@ -122,11 +132,11 @@
                 </HBox>
 
                 <!-- ROW 2: Balance Trend LineChart (60%) + Account Distribution (40%) -->
-                <HBox spacing="20.0">
+                <HBox spacing="16.0">
                     <!-- Line Chart Card -->
-                    <VBox styleClass="card" HBox.hgrow="ALWAYS" prefHeight="330.0" spacing="10.0">
+                    <VBox styleClass="card" HBox.hgrow="ALWAYS" prefHeight="230.0" spacing="8.0">
                         <HBox alignment="CENTER_LEFT">
-                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                            <VBox spacing="1.0" HBox.hgrow="ALWAYS">
                                 <Label text="Balance trend" styleClass="card-title"/>
                                 <Label text="Your combined balance over the last 6 months" styleClass="card-hint"/>
                             </VBox>
@@ -144,8 +154,8 @@
                     </VBox>
 
                     <!-- Donut / Pie Chart Card -->
-                    <VBox styleClass="card" prefWidth="400.0" prefHeight="330.0" spacing="12.0">
-                        <VBox spacing="2.0">
+                    <VBox styleClass="card" prefWidth="380.0" prefHeight="230.0" spacing="8.0">
+                        <VBox spacing="1.0">
                             <Label text="Account distribution" styleClass="card-title"/>
                             <Label text="Across all Nova accounts" styleClass="card-hint"/>
                         </VBox>

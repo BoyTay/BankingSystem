@@ -27,36 +27,46 @@
     <!-- ==================== 2. MAIN WORKSPACE ==================== -->
     <center>
         <ScrollPane fitToWidth="true" styleClass="content-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
-            <VBox spacing="24.0" styleClass="content-container">
+            <VBox spacing="14.0" styleClass="content-container">
                 <padding>
-                    <Insets top="28.0" right="36.0" bottom="36.0" left="36.0"/>
+                    <Insets top="14.0" right="24.0" bottom="16.0" left="24.0"/>
                 </padding>
 
                 <!-- HEADER -->
-                <HBox alignment="CENTER_LEFT">
-                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                        <Label text="Transfer &amp; payment" styleClass="header-greeting"/>
-                        <Label text="Send money securely to saved or new recipients." styleClass="header-subtitle"/>
+                <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+                    <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0" styleClass="header-badge-tag" maxWidth="-Infinity">
+                            <Circle radius="3.0" styleClass="header-badge-tag-dot"/>
+                            <Label text="GIAO DỊCH 24/7" styleClass="header-badge-tag-text"/>
+                        </HBox>
+                        <Label text="Chuyển tiền &amp; Thanh toán" styleClass="header-greeting"/>
+                        <Label text="Thực hiện chuyển khoản an toàn, tức thì đến người nhận mới hoặc danh bạ." styleClass="header-subtitle"/>
                     </VBox>
 
-                    <!-- Right Controls (Search, Notification + User Profile Pill) -->
-                    <HBox alignment="CENTER_RIGHT" spacing="16.0">
-                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0">
+                    <!-- Right Controls (Search with Shortcut, Notification Bell with Red Dot, User Profile Pill) -->
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <HBox alignment="CENTER_LEFT" styleClass="search-box" spacing="8.0" prefWidth="290.0">
                             <SVGPath content="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" styleClass="search-icon"/>
-                            <TextField promptText="Search..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <TextField promptText="Tìm kiếm giao dịch..." styleClass="search-input" HBox.hgrow="ALWAYS"/>
+                            <Label text="Ctrl K" styleClass="search-shortcut-badge" minWidth="-Infinity"/>
                         </HBox>
 
-                        <StackPane styleClass="icon-btn-round" style="-fx-pref-width: 42px; -fx-pref-height: 42px; -fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 50%; -fx-background-radius: 50%;">
-                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="svg-icon" style="-fx-stroke: #1E293B;"/>
+                        <StackPane styleClass="icon-btn-round">
+                            <SVGPath content="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" styleClass="header-bell-icon"/>
+                            <Circle radius="3.5" styleClass="notification-dot-badge" StackPane.alignment="TOP_RIGHT">
+                                <StackPane.margin>
+                                    <Insets top="8.0" right="8.0"/>
+                                </StackPane.margin>
+                            </Circle>
                         </StackPane>
 
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="user-profile-pill">
+                        <HBox alignment="CENTER_LEFT" spacing="9.0" styleClass="user-profile-pill">
                             <StackPane styleClass="avatar-circle">
-                                <Label fx:id="lblProfileAvatar" text="U" styleClass="avatar-text"/>
+                                <Label fx:id="lblProfileAvatar" text="A" styleClass="avatar-text"/>
                             </StackPane>
-                            <VBox spacing="2.0">
-                                <Label fx:id="lblProfileName" text="User" styleClass="user-name"/>
-                                <Label fx:id="lblProfileRole" text="Role" styleClass="user-tier"/>
+                            <VBox spacing="1.0" alignment="CENTER_LEFT">
+                                <Label fx:id="lblProfileName" text="Admin" styleClass="user-name"/>
+                                <Label fx:id="lblProfileRole" text="Admin" styleClass="user-tier"/>
                             </VBox>
                             <Label text="▾" styleClass="user-chevron"/>
                         </HBox>
@@ -64,17 +74,17 @@
                 </HBox>
 
                 <!-- STEP PROGRESS WIZARD BAR -->
-                <HBox styleClass="wizard-card" alignment="CENTER" spacing="16.0">
+                <HBox styleClass="wizard-card" alignment="CENTER" spacing="14.0">
                     <padding>
-                        <Insets top="18.0" right="32.0" bottom="18.0" left="32.0"/>
+                        <Insets top="10.0" right="20.0" bottom="10.0" left="20.0"/>
                     </padding>
 
                     <!-- Step 1: Select account -->
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <StackPane styleClass="step-icon-completed">
                             <Label text="1" styleClass="step-check-text"/>
                         </StackPane>
-                        <VBox spacing="2.0">
+                        <VBox spacing="1.0">
                             <Label text="Select account" styleClass="step-title-completed"/>
                             <Label text="From &amp; recipient" styleClass="step-sub"/>
                         </VBox>
@@ -84,11 +94,11 @@
                     <Region styleClass="step-line-completed" HBox.hgrow="ALWAYS"/>
 
                     <!-- Step 2: Enter amount (Active) -->
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <StackPane styleClass="step-icon-active">
                             <Label text="2" styleClass="step-num-active"/>
                         </StackPane>
-                        <VBox spacing="2.0">
+                        <VBox spacing="1.0">
                             <Label text="Enter amount" styleClass="step-title-active"/>
                             <Label text="Amount &amp; reference" styleClass="step-sub"/>
                         </VBox>
@@ -98,11 +108,11 @@
                     <Region fx:id="stepLine2" styleClass="step-line-pending" HBox.hgrow="ALWAYS"/>
 
                     <!-- Step 3: Confirm -->
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <StackPane fx:id="stepIcon3" styleClass="step-icon-pending">
                             <Label fx:id="stepNum3" text="3" styleClass="step-num-pending"/>
                         </StackPane>
-                        <VBox spacing="2.0">
+                        <VBox spacing="1.0">
                             <Label fx:id="stepTitle3" text="Confirm" styleClass="step-title-pending"/>
                             <Label text="Xác nhận ngay" styleClass="step-sub"/>
                         </VBox>
@@ -110,23 +120,23 @@
                 </HBox>
 
                 <!-- MAIN WORKSPACE: Form (65%) + Summary Card (35%) -->
-                <HBox spacing="24.0">
+                <HBox spacing="16.0">
 
                     <!-- LEFT COLUMN: Transfer Form -->
-                    <VBox styleClass="card" HBox.hgrow="ALWAYS" spacing="20.0">
-                        <VBox spacing="4.0">
-                            <Label text="How much would you like to send?" styleClass="transfer-form-headline"/>
+                    <VBox styleClass="card" HBox.hgrow="ALWAYS" spacing="12.0">
+                        <VBox spacing="2.0">
+                            <Label text="How much would you like to send?" styleClass="transfer-form-headline" style="-fx-font-size: 16px;"/>
                             <Label text="Transfers usually arrive within a few minutes." styleClass="card-hint"/>
                         </VBox>
 
                         <!-- Group 1: From Account -->
-                        <VBox spacing="8.0">
+                        <VBox spacing="4.0">
                             <Label text="From account" styleClass="form-field-label"/>
                             <ComboBox fx:id="cbFromAccount" maxWidth="Infinity" styleClass="account-selector-combo"/>
                         </VBox>
 
                         <!-- Group 2: To Recipient -->
-                        <VBox spacing="8.0">
+                        <VBox spacing="4.0">
                             <HBox alignment="CENTER_LEFT">
                                 <Label text="To recipient" styleClass="form-field-label" HBox.hgrow="ALWAYS"/>
                                 <Region HBox.hgrow="ALWAYS"/>
