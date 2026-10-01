@@ -1,5 +1,6 @@
 package com.banking.ui;
 
+import com.banking.pattern.creational.DatabaseManager;
 import com.banking.service.AuthService;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -9,6 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -26,6 +28,7 @@ public final class NovaBankShell extends BorderPane {
     private final Map<String, Parent> pages = new HashMap<>();
     private final StackPane content = new StackPane();
     private final VBox toasts = new VBox(8);
+    private final Label databaseStatus = new Label();
 
     public NovaBankShell(AuthService auth, AuthService.User user) {
         this.auth = auth;
@@ -99,6 +102,11 @@ public final class NovaBankShell extends BorderPane {
         logoutBtn.setOnAction(e -> getScene().getWindow().hide());
 
         bottomMenu.getChildren().addAll(profileBtn, logoutBtn);
+        databaseStatus.setWrapText(true);
+        databaseStatus.setId("databaseStatus");
+        databaseStatus.setStyle("-fx-font-size: 11px; -fx-font-weight: bold;");
+        refreshDatabaseStatus();
+        bottomMenu.getChildren().add(databaseStatus);
         sidebar.getChildren().add(bottomMenu);
 
         return sidebar;
@@ -137,6 +145,13 @@ public final class NovaBankShell extends BorderPane {
     public void show(String key) {
         if (!allowed(key)) return;
 
+        if (!refreshDatabaseStatus()) {
+            Label error = new Label("Không thể mở dữ liệu ngân hàng. Xem trạng thái SQLite ở thanh bên.");
+            error.setWrapText(true);
+            content.getChildren().setAll(error, toasts);
+            return;
+        }
+
         navButtons.values().forEach(btn -> btn.getStyleClass().remove("nav-item-active"));
         if (navButtons.containsKey(key)) {
             navButtons.get(key).getStyleClass().add("nav-item-active");
@@ -145,6 +160,24 @@ public final class NovaBankShell extends BorderPane {
         Parent page = pages.computeIfAbsent(key, this::createPage);
         content.getChildren().setAll(page, toasts);
         UIContext.getInstance().notifyDataChanged();
+    }
+
+    private boolean refreshDatabaseStatus() {
+        try {
+            DatabaseManager database = DatabaseManager.getInstance();
+            database.verifyStorage();
+            databaseStatus.setText("● SQLite sẵn sàng · Singleton @"
+                    + Integer.toHexString(System.identityHashCode(database)));
+            databaseStatus.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #34D399;");
+            databaseStatus.setTooltip(new Tooltip("DatabaseManager.getInstance() khởi tạo thành công."));
+            return true;
+        } catch (RuntimeException | LinkageError failure) {
+            databaseStatus.setText("● SQLite không khả dụng");
+            databaseStatus.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #F87171;");
+            databaseStatus.setTooltip(new Tooltip(failure.getMessage() == null
+                    ? failure.getClass().getSimpleName() : failure.getMessage()));
+            return false;
+        }
     }
 
     private boolean allowed(String key) {
@@ -158,7 +191,7 @@ public final class NovaBankShell extends BorderPane {
             case "dashboard", "accounts", "transfer", "history", "templates" -> loadFxml(key);
             case "cash" -> scroll(new DepositWithdrawView(user));
             case "open" -> scroll(new AccountView());
-            case "users" -> scroll(new UserView(auth));
+            case "users" -> scroll(new UserView(auth, user));
             case "profile" -> scroll(new ProfileView(auth, user));
             case "proxy" -> scroll(new ProxyDemoView());
             default -> throw new IllegalArgumentException("Màn hình không tồn tại: " + key);

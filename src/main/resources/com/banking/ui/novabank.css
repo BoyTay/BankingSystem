@@ -3057,4 +3057,206 @@ default-color2.chart-pie { -fx-pie-color: #F59E0B; -fx-border-width: 0; }
     -fx-padding: 12px 14px;
 }
 
+/* ── STITCH DESIGN SYSTEM COMPONENTS ──────────────────────────── */
+
+/* Identity Card */
+.identity-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.03), 8, 0, 0, 2);
+}
+
+.identity-avatar-box {
+    -fx-background-color: #1E2D4A;
+    -fx-background-radius: 12px;
+    -fx-min-width: 52px;
+    -fx-min-height: 52px;
+    -fx-max-width: 52px;
+    -fx-max-height: 52px;
+    -fx-alignment: center;
+}
+
+.identity-avatar-text {
+    -fx-text-fill: #40E18F;
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+}
+
+.identity-badge-role {
+    -fx-background-color: #DBE1FF;
+    -fx-text-fill: #00174B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 12px;
+}
+
+/* Telemetry Box */
+.telemetry-box {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+}
+
+/* Token Metadata Box */
+.token-metadata-box {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+}
+
+/* Inline Feedback Banners */
+.inline-feedback-info {
+    -fx-background-color: #EFF6FF;
+    -fx-border-color: #BFDBFE;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+}
+
+.inline-feedback-error {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: #FECACA;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+}
+
+.inline-feedback-success {
+    -fx-background-color: #ECFDF5;
+    -fx-border-color: #A7F3D0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+}
+
+/* Password Strength Meter Bars */
+.pwd-meter-bar-off {
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 3px;
+    -fx-min-height: 5px;
+    -fx-pref-height: 5px;
+    -fx-max-height: 5px;
+}
+
+.pwd-meter-bar-weak {
+    -fx-background-color: #DC2626;
+    -fx-background-radius: 3px;
+    -fx-min-height: 5px;
+    -fx-pref-height: 5px;
+    -fx-max-height: 5px;
+}
+
+.pwd-meter-bar-medium {
+    -fx-background-color: #D97706;
+    -fx-background-radius: 3px;
+    -fx-min-height: 5px;
+    -fx-pref-height: 5px;
+    -fx-max-height: 5px;
+}
+
+.pwd-meter-bar-strong {
+    -fx-background-color: #2563EB;
+    -fx-background-radius: 3px;
+    -fx-min-height: 5px;
+    -fx-pref-height: 5px;
+    -fx-max-height: 5px;
+}
+
+.pwd-meter-bar-secure {
+    -fx-background-color: #059669;
+    -fx-background-radius: 3px;
+    -fx-min-height: 5px;
+    -fx-pref-height: 5px;
+    -fx-max-height: 5px;
+}
+
+/* Result Feedback Banner */
+.result-banner-success {
+    -fx-background-color: rgba(16, 185, 129, 0.08);
+    -fx-border-color: rgba(16, 185, 129, 0.28);
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 16px;
+}
+
+/* Terminal / Code Inspector Surface */
+.terminal-surface {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 16px;
+}
+
+.terminal-title-bar {
+    -fx-border-color: transparent transparent #1E293B transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 10px 0;
+}
+
+.terminal-dot-red {
+    -fx-fill: #EF4444;
+}
+
+.terminal-dot-yellow {
+    -fx-fill: #F59E0B;
+}
+
+.terminal-dot-green {
+    -fx-fill: #10B981;
+}
+
+.terminal-code-editor {
+    -fx-font-family: 'JetBrains Mono', 'Consolas', monospace;
+    -fx-font-size: 11.5px;
+    -fx-line-spacing: 3px;
+}
+
+/* Proxy Outcome Panels */
+.outcome-card-denied {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: #FECACA;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 14px 16px;
+}
+
+.outcome-card-allowed {
+    -fx-background-color: #ECFDF5;
+    -fx-border-color: #A7F3D0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 14px 16px;
+}
+
+/* Architecture Flow Step Box */
+.flow-step-box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 14px;
+    -fx-alignment: center;
+}
+
+
 
