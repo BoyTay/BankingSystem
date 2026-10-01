@@ -64,6 +64,16 @@ public final class SqliteStore {
         return connection;
     }
 
+    public void verifyConnection() {
+        try (Connection connection = connect();
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery("SELECT 1")) {
+            if (!result.next()) throw new SQLException("SQLite không phản hồi.");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không kết nối được cơ sở dữ liệu.", e);
+        }
+    }
+
     public List<Account> loadAccounts() {
         List<Account> result = new ArrayList<>();
         try (Connection connection = connect();

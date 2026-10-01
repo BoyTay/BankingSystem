@@ -409,7 +409,7 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
     private String getFeeStrategyDescription(Account a) {
         return switch (a.getType()) {
             case STANDARD -> "Phí cố định 0.1% mỗi giao dịch";
-            case SAVINGS -> "Biểu phí bậc thang theo số dư";
+            case SAVINGS -> "Theo số tiền giao dịch: ≤1 triệu 0,1%; ≤10 triệu 0,05%; >10 triệu 0,02%";
             case PREMIUM -> "Miễn phí 100% mọi giao dịch";
         };
     }

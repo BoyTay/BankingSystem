@@ -17,7 +17,9 @@ import javafx.collections.ObservableList;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Quản lý trạng thái và kết nối UI với các Service / Pattern.
@@ -39,6 +41,7 @@ public class UIContext {
     private final ObservableList<String> notificationLogs = FXCollections.observableArrayList();
 
     private final List<Runnable> dataChangeListeners = new ArrayList<>();
+    private final Map<Account, AccountObserver> uiObservers = new IdentityHashMap<>();
 
     private UIContext() {
         this.accountService = new AccountService();
@@ -48,6 +51,8 @@ public class UIContext {
         this.facade = new BankingFacade(accountService, transactionService, notificationService, txHistory);
 
         txHistory.restoreFromLedger(transactionService.getAllTransactions(), accountService);
+
+        for (Account account : accountService.getAllAccounts()) attachUiObserver(account);
 
         if (Boolean.getBoolean("banking.demo.seed")) seedInitialData();
         refresh();
@@ -85,8 +90,9 @@ public class UIContext {
         }
     }
 
-    public void attachUiObserver(Account account) {
-        account.addObserver(new AccountObserver() {
+    public synchronized void attachUiObserver(Account account) {
+        if (uiObservers.containsKey(account)) return;
+        AccountObserver observer = new AccountObserver() {
             @Override
             public void update(String accountNumber, String message) {
                 String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
@@ -98,7 +104,9 @@ public class UIContext {
                     }
                 });
             }
-        });
+        };
+        account.addObserver(observer);
+        uiObservers.put(account, observer);
     }
 
     public void logCustomEvent(String prefix, String message) {
@@ -124,7 +132,9 @@ public class UIContext {
     }
 
     public void refresh() {
-        accounts.setAll(accountService.getAllAccounts());
+        List<Account> currentAccounts = accountService.getAllAccounts();
+        for (Account account : currentAccounts) attachUiObserver(account);
+        accounts.setAll(currentAccounts);
         transactions.setAll(transactionService.getAllTransactions());
     }
 

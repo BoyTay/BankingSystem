@@ -340,9 +340,16 @@ public class NovaBankTransferController implements Initializable, NovaBankNaviga
 
         // Show custom premium confirmation dialog
         javafx.stage.Stage ownerStage = (javafx.stage.Stage) btnReviewTransfer.getScene().getWindow();
-        String displayAmount = UiUtils.formatVnd(amount) + " VND";
+        String displayAmount = UiUtils.formatVnd(amount);
         String displayFrom = from.getOwnerName() + " (•••• " + from.getAccountNumber().substring(from.getAccountNumber().length() - 4) + ")";
-        String displayFee = "Miễn phí";
+        double fee;
+        try {
+            fee = Money.nonNegative(from.getFeeStrategy().calculateFee(Money.positive(amount)));
+        } catch (IllegalArgumentException ex) {
+            showError(UiUtils.humanizeError(ex));
+            return;
+        }
+        String displayFee = fee == 0 ? "0 VND (Miễn phí)" : UiUtils.formatVnd(fee);
 
         boolean userConfirmed = ConfirmTransferDialog.show(
                 ownerStage, displayAmount, to.getOwnerName(), displayFrom, displayFee, ref);

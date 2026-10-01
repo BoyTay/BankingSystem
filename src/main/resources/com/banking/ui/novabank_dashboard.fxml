@@ -10,6 +10,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -215,6 +216,12 @@
 
                     <!-- Transaction Cards Container -->
                     <HBox fx:id="boxRecentTransactions" spacing="16.0"/>
+                </VBox>
+
+                <VBox styleClass="card" spacing="8.0">
+                    <Label text="Thông báo tài khoản (Observer)" styleClass="card-title"/>
+                    <Label text="Sự kiện từ Account.notifyObservers() xuất hiện tại đây khi nạp, chuyển tiền hoặc đổi trạng thái tài khoản." styleClass="card-hint"/>
+                    <ListView fx:id="listObserverEvents" prefHeight="130.0"/>
                 </VBox>
 
             </VBox>

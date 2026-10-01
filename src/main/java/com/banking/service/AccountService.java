@@ -85,6 +85,7 @@ public class AccountService {
             throw failure;
         }
         System.out.printf("  🔒 Tài khoản %s đã bị KHÓA.%n", accountNumber);
+        acc.notifyObservers("Tài khoản đã được khóa (LockedState).");
     }
 
     /**
@@ -105,5 +106,6 @@ public class AccountService {
             throw failure;
         }
         System.out.printf("  🔓 Tài khoản %s đã được MỞ KHÓA.%n", accountNumber);
+        acc.notifyObservers("Tài khoản đã được mở khóa (ActiveState).");
     }
 }

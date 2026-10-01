@@ -6,6 +6,7 @@ import com.banking.model.enums.AccountType;
 import com.banking.service.AuthService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -18,6 +19,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -74,6 +76,7 @@ public class NovaBankDashboardController implements Initializable, NovaBankNavig
     @FXML private Label lblPremiumPct;
 
     @FXML private HBox boxRecentTransactions;
+    @FXML private ListView<String> listObserverEvents;
 
     private final UIContext ctx = UIContext.getInstance();
     private boolean isBalanceHidden = false;
@@ -101,6 +104,10 @@ public class NovaBankDashboardController implements Initializable, NovaBankNavig
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        listObserverEvents.setItems(ctx.getNotificationLogs());
+        listObserverEvents.setPlaceholder(new Label("Chưa có thông báo tài khoản."));
+        ctx.getNotificationLogs().addListener((ListChangeListener<String>) change ->
+                listObserverEvents.scrollTo(0));
         if (btnToggleBalance != null) {
             btnToggleBalance.setText("");
         }

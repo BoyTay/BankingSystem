@@ -36,6 +36,10 @@ public class DatabaseManager {
         return INSTANCE;
     }
 
+    public void verifyStorage() {
+        store.verifyConnection();
+    }
+
     // ── Account CRUD ────────────────────────────────────────
 
     public void saveAccount(Account account) {
