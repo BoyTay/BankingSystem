@@ -93,183 +93,125 @@ final class ProfileView extends VBox {
 
         titleBox.getChildren().addAll(tagBox, title, subtitle);
 
-        // Right side badges & user profile pill
-        HBox rightControls = new HBox(10);
-        rightControls.setAlignment(Pos.CENTER_RIGHT);
-
-        HBox proxyBadge = new HBox(6);
-        proxyBadge.setAlignment(Pos.CENTER_LEFT);
-        proxyBadge.setStyle("-fx-background-color: #EFF6FF; -fx-border-color: #BFDBFE; -fx-border-radius: 16px; -fx-background-radius: 16px; -fx-padding: 4px 10px;");
-        SVGPath shieldSvg = new SVGPath();
-        shieldSvg.setContent("M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z");
-        shieldSvg.setStyle("-fx-fill: #2563EB; -fx-scale-x: 0.65; -fx-scale-y: 0.65;");
-        Label lblProxyTag = new Label("Pattern: Protection Proxy Active");
-        lblProxyTag.setStyle("-fx-text-fill: #1D4ED8; -fx-font-size: 11px; -fx-font-weight: 700;");
-        proxyBadge.getChildren().addAll(shieldSvg, lblProxyTag);
-
-        HBox shaBadge = new HBox(6);
-        shaBadge.setAlignment(Pos.CENTER_LEFT);
-        shaBadge.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 16px; -fx-background-radius: 16px; -fx-padding: 4px 10px;");
-        Circle dotSha = new Circle(3.5, Color.web("#00C476"));
-        Label lblSha = new Label("SHA-256 / PBKDF2");
-        lblSha.setStyle("-fx-text-fill: #475569; -fx-font-size: 11px; -fx-font-family: 'JetBrains Mono', 'Consolas', monospace; -fx-font-weight: 600;");
-        shaBadge.getChildren().addAll(dotSha, lblSha);
-
-        rightControls.getChildren().addAll(proxyBadge, shaBadge);
-        header.getChildren().addAll(titleBox, rightControls);
+        header.getChildren().addAll(titleBox);
         getChildren().add(header);
     }
 
     private VBox buildLeftColumn() {
-        VBox leftCol = new VBox(16);
+        VBox leftCol = new VBox(20);
 
-        // 1. Identity Card
-        VBox identityCard = new VBox(14);
-        identityCard.getStyleClass().add("card");
-        identityCard.setStyle("-fx-padding: 20;");
+        // 1. Premium Identity Card
+        VBox identityCard = new VBox(24);
+        identityCard.setStyle("-fx-padding: 28; -fx-background-color: linear-gradient(to bottom right, #0F172A, #1E293B, #334155); -fx-background-radius: 16px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 15, 0, 0, 8);");
 
-        HBox topIdentity = new HBox(12);
+        HBox topIdentity = new HBox(16);
         topIdentity.setAlignment(Pos.CENTER_LEFT);
 
         StackPane avatarBox = new StackPane();
-        avatarBox.getStyleClass().add("identity-avatar-box");
+        avatarBox.setStyle("-fx-background-color: linear-gradient(to right, #FDE047, #F59E0B); -fx-background-radius: 50%; -fx-min-width: 56px; -fx-min-height: 56px; -fx-max-width: 56px; -fx-max-height: 56px; -fx-padding: 2px;");
+        StackPane innerAvatar = new StackPane();
+        innerAvatar.setStyle("-fx-background-color: #0F172A; -fx-background-radius: 50%;");
+
         String initial = (user != null && !user.username().isEmpty()) ? user.username().substring(0, 1).toUpperCase() : "A";
         Label lblAvatar = new Label(initial);
-        lblAvatar.getStyleClass().add("identity-avatar-text");
-        avatarBox.getChildren().add(lblAvatar);
+        lblAvatar.setStyle("-fx-text-fill: #FDE047; -fx-font-size: 24px; -fx-font-weight: 900; -fx-font-family: 'Inter', sans-serif;");
+        innerAvatar.getChildren().add(lblAvatar);
+        avatarBox.getChildren().add(innerAvatar);
 
-        VBox userDetails = new VBox(2);
+        VBox userDetails = new VBox(4);
         HBox.setHgrow(userDetails, Priority.ALWAYS);
 
-        HBox nameRow = new HBox(6);
+        HBox nameRow = new HBox(8);
         nameRow.setAlignment(Pos.CENTER_LEFT);
         String username = (user != null) ? user.username() : "admin";
         Label lblUsername = new Label(username);
-        lblUsername.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
+        lblUsername.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #FFFFFF;");
 
-        Label badgeVerified = new Label("✓");
-        badgeVerified.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8; -fx-font-size: 11px; -fx-font-weight: 800; -fx-padding: 1 5; -fx-background-radius: 10px;");
+        Label badgeVerified = new Label("✓ VERIFIED");
+        badgeVerified.setStyle("-fx-background-color: rgba(16, 185, 129, 0.2); -fx-text-fill: #34D399; -fx-font-size: 10px; -fx-font-weight: 900; -fx-padding: 2 6; -fx-background-radius: 4px;");
         nameRow.getChildren().addAll(lblUsername, badgeVerified);
 
         String roleStr = (user != null) ? user.role().name() : "ADMIN";
         Label lblRoleSub = new Label("Super Administrator / Quyền hệ thống");
-        lblRoleSub.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B;");
+        lblRoleSub.setStyle("-fx-font-size: 12px; -fx-text-fill: #94A3B8;");
         userDetails.getChildren().addAll(nameRow, lblRoleSub);
 
         Label badgeRole = new Label(roleStr);
-        badgeRole.getStyleClass().add("identity-badge-role");
+        badgeRole.setStyle("-fx-background-color: linear-gradient(to right, #3B82F6, #2563EB); -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: 800; -fx-padding: 4 10; -fx-background-radius: 20px;");
 
         topIdentity.getChildren().addAll(avatarBox, userDetails, badgeRole);
 
-        // Telemetry Box
-        VBox telemetryBox = new VBox(8);
-        telemetryBox.getStyleClass().add("telemetry-box");
-
-        telemetryBox.getChildren().addAll(
-                buildTelemetryRow("Trạng thái hệ thống", "Đang hoạt động", true, "#059669"),
-                buildTelemetryRow("Phiên đăng nhập", "SQLite Session Active", false, "#1E293B"),
-                buildTelemetryRow("Địa chỉ máy trạm", "127.0.0.1:58432 (Localhost)", false, "#64748B"),
-                buildTelemetryRow("Cơ chế xác thực", "PBKDF2WithHmacSHA512", false, "#2563EB")
-        );
-
-        // Token Metadata Box (Dark Technical)
-        VBox tokenBox = new VBox(6);
-        tokenBox.getStyleClass().add("token-metadata-box");
-
-        HBox tokenHeader = new HBox();
-        Label lblTokenTitle = new Label("CONTEXT TOKEN METADATA");
-        lblTokenTitle.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-weight: 700;");
+        HBox cardFooter = new HBox();
+        cardFooter.setAlignment(Pos.CENTER_LEFT);
+        cardFooter.setStyle("-fx-padding: 10 0 0 0;");
+        SVGPath chipIcon = new SVGPath();
+        chipIcon.setContent("M4 4h16v16H4V4zm2 2v3h3V6H6zm5 0v3h3V6h-3zm5 0v3h3V6h-3zM6 11v3h3v-3H6zm5 0v3h3v-3h-3zm5 0v3h3v-3h-3zM6 16v2h3v-2H6zm5 0v2h3v-2h-3zm5 0v2h3v-2h-3z");
+        chipIcon.setStyle("-fx-fill: #FBBF24; -fx-scale-x: 1.2; -fx-scale-y: 1.2;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        Label lblTokenId = new Label("ID: #SYS-" + Math.abs(username.hashCode() % 90000 + 10000));
-        lblTokenId.setStyle("-fx-text-fill: #40E18F; -fx-font-size: 10px; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-weight: 700;");
-        tokenHeader.getChildren().addAll(lblTokenTitle, sp, lblTokenId);
+        Label lblCardNum = new Label("**** **** **** " + Math.abs(username.hashCode() % 9000 + 1000));
+        lblCardNum.setStyle("-fx-text-fill: #CBD5E1; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 14px; -fx-letter-spacing: 2px;");
+        cardFooter.getChildren().addAll(chipIcon, sp, lblCardNum);
 
-        Label lblSubject = new Label("Subject: Principal[username=" + username + ", role=" + roleStr + "]");
-        lblSubject.setStyle("-fx-text-fill: #93C5FD; -fx-font-size: 10.5px; -fx-font-family: 'JetBrains Mono', monospace;");
+        identityCard.getChildren().addAll(topIdentity, cardFooter);
 
-        Label lblSignature = new Label("Signature: c2a4f089e1b238a7c29e61280... [VERIFIED]");
-        lblSignature.setStyle("-fx-text-fill: #64748B; -fx-font-size: 10px; -fx-font-family: 'JetBrains Mono', monospace;");
+        // 2. Security Status Widget
+        VBox securityWidget = new VBox(14);
+        securityWidget.setStyle("-fx-background-color: #FFFFFF; -fx-background-radius: 16px; -fx-border-color: #E2E8F0; -fx-border-radius: 16px; -fx-padding: 24; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);");
 
-        tokenBox.getChildren().addAll(tokenHeader, lblSubject, lblSignature);
+        HBox secHeader = new HBox(14);
+        secHeader.setAlignment(Pos.CENTER_LEFT);
 
-        identityCard.getChildren().addAll(topIdentity, telemetryBox, tokenBox);
+        StackPane shieldBox = new StackPane();
+        shieldBox.setStyle("-fx-background-color: rgba(16, 185, 129, 0.1); -fx-background-radius: 50%; -fx-min-width: 48px; -fx-min-height: 48px;");
+        SVGPath greenShield = new SVGPath();
+        greenShield.setContent("M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z");
+        greenShield.setStyle("-fx-stroke: #10B981; -fx-stroke-width: 2; -fx-fill: transparent; -fx-stroke-linecap: round; -fx-stroke-linejoin: round;");
+        shieldBox.getChildren().add(greenShield);
 
-        // 2. Security Guidelines Card
-        VBox policyCard = new VBox(12);
-        policyCard.getStyleClass().add("card");
-        policyCard.setStyle("-fx-padding: 18;");
+        VBox secTitleBox = new VBox(2);
+        Label lblSecTitle = new Label("Bảo vệ toàn diện");
+        lblSecTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
+        Label lblSecSub = new Label("Tài khoản của bạn đang được bảo mật an toàn.");
+        lblSecSub.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B;");
+        secTitleBox.getChildren().addAll(lblSecTitle, lblSecSub);
 
-        HBox policyTitleRow = new HBox(8);
-        policyTitleRow.setAlignment(Pos.CENTER_LEFT);
-        Label iconPolicy = new Label("🛡️");
-        iconPolicy.setStyle("-fx-font-size: 15px;");
-        Label lblPolicyTitle = new Label("Chính sách an toàn tài khoản");
-        lblPolicyTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
-        policyTitleRow.getChildren().addAll(iconPolicy, lblPolicyTitle);
+        secHeader.getChildren().addAll(shieldBox, secTitleBox);
 
-        VBox policyList = new VBox(8);
-        policyList.getChildren().addAll(
-                buildPolicyItem("⏱️ Thời hạn phiên làm việc", "Phiên tự động kết thúc sau 30 phút không thao tác để ngăn truy cập trái phép trên máy trạm giao dịch."),
-                buildPolicyItem("🔒 Mã hóa chuẩn ngân hàng", "Mật khẩu được băm muối (Salted) bằng PBKDF2 nhiều vòng lặp trước khi lưu cơ sở dữ liệu SQLite."),
-                buildPolicyItem("📝 Nhật ký truy vết & ủy quyền", "Mọi lệnh đổi mật khẩu và truy cập tài nguyên đều được ghi nhận tự động vào Ledger và Audit Trail.")
+        VBox secList = new VBox(12);
+        secList.setStyle("-fx-padding: 10 0 0 0;");
+        secList.getChildren().addAll(
+            buildSecFeature("Xác thực 2 lớp (2FA)", "Đang hoạt động", true),
+            buildSecFeature("Mã hóa đầu cuối", "Chuẩn AES-256", true),
+            buildSecFeature("Cảnh báo đăng nhập lạ", "Bật qua Email & SMS", true)
         );
 
-        HBox policyFooter = new HBox();
-        policyFooter.setAlignment(Pos.CENTER_LEFT);
-        policyFooter.setStyle("-fx-padding: 6 0 0 0; -fx-border-color: #F1F5F9 transparent transparent transparent; -fx-border-width: 1 0 0 0;");
-        Label lblSecVer = new Label("Bảo mật: Core-Sec v3.4");
-        lblSecVer.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #94A3B8;");
-        Region sp2 = new Region();
-        HBox.setHgrow(sp2, Priority.ALWAYS);
-        Label lblPci = new Label("✓ Tuân thủ PCI-DSS Level 1");
-        lblPci.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #059669; -fx-font-weight: 700;");
-        policyFooter.getChildren().addAll(lblSecVer, sp2, lblPci);
+        securityWidget.getChildren().addAll(secHeader, secList);
 
-        policyCard.getChildren().addAll(policyTitleRow, policyList, policyFooter);
-
-        leftCol.getChildren().addAll(identityCard, policyCard);
+        leftCol.getChildren().addAll(identityCard, securityWidget);
         return leftCol;
     }
 
-    private HBox buildTelemetryRow(String label, String value, boolean hasPulse, String valColor) {
-        HBox row = new HBox();
+    private HBox buildSecFeature(String title, String status, boolean isGood) {
+        HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-        Label lblName = new Label(label);
-        lblName.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
+        Label lblCheck = new Label(isGood ? "✓" : "!");
+        lblCheck.setStyle("-fx-text-fill: " + (isGood ? "#10B981" : "#F59E0B") + "; -fx-font-weight: 800;");
+        Label lblTitle = new Label(title);
+        lblTitle.setStyle("-fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: 600;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-
-        HBox valBox = new HBox(5);
-        valBox.setAlignment(Pos.CENTER_RIGHT);
-        if (hasPulse) {
-            Circle pulse = new Circle(3.5, Color.web("#10B981"));
-            valBox.getChildren().add(pulse);
-        }
-        Label lblVal = new Label(value);
-        lblVal.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " + valColor + ";");
-        valBox.getChildren().add(lblVal);
-
-        row.getChildren().addAll(lblName, sp, valBox);
+        Label lblStatus = new Label(status);
+        lblStatus.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+        row.getChildren().addAll(lblCheck, lblTitle, sp, lblStatus);
         return row;
     }
 
-    private VBox buildPolicyItem(String title, String desc) {
-        VBox item = new VBox(2);
-        item.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 10;");
-        Label lblTitle = new Label(title);
-        lblTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
-        Label lblDesc = new Label(desc);
-        lblDesc.setWrapText(true);
-        lblDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B; -fx-line-spacing: 2px;");
-        item.getChildren().addAll(lblTitle, lblDesc);
-        return item;
-    }
+
 
     private VBox buildRightColumn() {
-        VBox rightCard = new VBox(16);
-        rightCard.getStyleClass().add("card");
-        rightCard.setStyle("-fx-padding: 24;");
+        VBox rightCard = new VBox(20);
+        rightCard.setStyle("-fx-background-color: #FFFFFF; -fx-background-radius: 16px; -fx-border-color: #E2E8F0; -fx-border-radius: 16px; -fx-padding: 32; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);");
 
         // Section Title
         HBox cardHeader = new HBox(10);
@@ -357,34 +299,17 @@ final class ProfileView extends VBox {
         actionRow.setAlignment(Pos.CENTER_RIGHT);
         actionRow.setStyle("-fx-padding: 8 0 0 0;");
 
-        Button btnReset = new Button("⟲ Làm lại");
-        btnReset.getStyleClass().add("btn-secondary");
+        Button btnReset = new Button("Làm lại");
+        btnReset.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-font-weight: 700; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
         btnReset.setOnAction(e -> handleResetForm());
 
-        Button btnSubmit = new Button("✓ Đổi mật khẩu");
-        btnSubmit.getStyleClass().add("btn-primary");
-        btnSubmit.setStyle("-fx-font-size: 13px; -fx-padding: 9px 24px; -fx-font-weight: 700;");
+        Button btnSubmit = new Button("Cập nhật mật khẩu");
+        btnSubmit.setStyle("-fx-background-color: linear-gradient(to right, #2563EB, #4F46E5); -fx-text-fill: #FFFFFF; -fx-font-size: 13.5px; -fx-font-weight: 700; -fx-padding: 10 24; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.3), 8, 0, 0, 4);");
         btnSubmit.setOnAction(e -> handleSubmitPassword());
 
         actionRow.getChildren().addAll(btnReset, btnSubmit);
 
-        // Footer Stamp
-        HBox footerStamp = new HBox();
-        footerStamp.setAlignment(Pos.CENTER_LEFT);
-        footerStamp.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12;");
-
-        Label lblLastChange = new Label("🕒 Lần đổi gần nhất: Phiên đăng nhập hiện tại");
-        lblLastChange.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B;");
-
-        Region spFooter = new Region();
-        HBox.setHgrow(spFooter, Priority.ALWAYS);
-
-        Label lblActionCode = new Label("Action: AuthService#changePassword()");
-        lblActionCode.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #94A3B8; -fx-font-family: 'JetBrains Mono', monospace;");
-
-        footerStamp.getChildren().addAll(lblLastChange, spFooter, lblActionCode);
-
-        form.getChildren().addAll(grpCurrent, grpNew, grpConfirm, actionRow, footerStamp);
+        form.getChildren().addAll(grpCurrent, grpNew, grpConfirm, actionRow);
 
         rightCard.getChildren().addAll(cardHeader, bannerFeedback, form);
         return rightCard;
