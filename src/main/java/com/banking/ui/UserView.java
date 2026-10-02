@@ -1,26 +1,22 @@
 package com.banking.ui;
 
 import com.banking.service.AuthService;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
 /**
  * Màn hình Quản lý người dùng & Phân quyền truy cập (User Management & Access Control).
- * Thiết kế chuẩn theo Stitch Design System & Figma Brief:
- * - Cột trái: Form tạo người dùng với vai trò RBAC, kiểm tra định dạng thời gian thực, banner kết quả & Telemetry Active Guard.
- * - Cột phải: Danh sách tài khoản hệ thống (kèm lọc tìm kiếm, cập nhật tức thì khi tạo) & Ma trận phân quyền RBAC Matrix.
+ * Thiết kế chuẩn theo Figma Brief & UI Specification:
+ * - Breadcrumb & thông tin phiên đăng nhập ở header.
+ * - Cột trái: Form tạo người dùng với ComboBox chọn vai trò, nút CTA chuẩn nhận diện thương hiệu,
+ *             và khung phản hồi kết quả nội tuyến (Inline Result Box) thay cho dialog hộp thoại.
+ * - Cột phải: Card hướng dẫn "Hiểu quyền trước khi cấp" giải thích chi tiết 3 vai trò (ADMIN, STAFF, VIEWER),
+ *             callout box lưu ý về cơ chế xác thực AuthService, và ghi chú phạm vi hệ thống.
  */
 final class UserView extends VBox {
 
@@ -30,48 +26,37 @@ final class UserView extends VBox {
     // Form inputs
     private final TextField txtUsername = new TextField();
     private final PasswordField txtPassword = new PasswordField();
-    private final TextField txtPasswordPlain = new TextField();
-    private final ToggleGroup roleToggleGroup = new ToggleGroup();
-    private final RadioButton rbStaff = new RadioButton("STAFF");
-    private final RadioButton rbAdmin = new RadioButton("ADMIN");
-    private final RadioButton rbViewer = new RadioButton("VIEWER");
+    private final ComboBox<AuthService.Role> cbRole = new ComboBox<>();
 
-    // Dynamic result banner
-    private final VBox bannerResult = new VBox(6);
+    // Inline Result Box components
+    private final HBox inlineResultBox = new HBox(12);
+    private final StackPane inlineIconContainer = new StackPane();
+    private final SVGPath inlineIconSvg = new SVGPath();
     private final Label lblResultTitle = new Label();
     private final Label lblResultDetail = new Label();
-    private final Label lblResultMeta = new Label();
-
-    // Directory Table & Filter
-    private final ObservableList<SystemUserEntry> userDirectory = FXCollections.observableArrayList();
-    private final FilteredList<SystemUserEntry> filteredDirectory = new FilteredList<>(userDirectory, p -> true);
-    private final TableView<SystemUserEntry> tableDirectory = new TableView<>();
-    private final TextField txtFilter = new TextField();
-
-    public record SystemUserEntry(String username, AuthService.Role role, String description, String status, String createdAt) {}
 
     UserView(AuthService auth, AuthService.User currentUser) {
         this.auth = auth;
         this.currentUser = currentUser;
 
-        setSpacing(18);
+        setSpacing(20);
         getStyleClass().add("content-pane");
+        setStyle("-fx-background-color: #F8FAFC; -fx-padding: 24 32;");
 
-        initDirectoryData();
         buildHeader();
 
-        // 2 CỘT CHÍNH
-        HBox mainGrid = new HBox(20);
+        HBox mainGrid = new HBox(24);
         mainGrid.setAlignment(Pos.TOP_LEFT);
 
-        VBox leftCol = buildLeftColumn();
-        VBox rightCol = buildRightColumn();
+        VBox leftCard = buildLeftCard();
+        VBox rightCard = buildRightCard();
 
-        leftCol.setPrefWidth(430);
-        leftCol.setMinWidth(380);
-        HBox.setHgrow(rightCol, Priority.ALWAYS);
+        HBox.setHgrow(leftCard, Priority.ALWAYS);
+        HBox.setHgrow(rightCard, Priority.ALWAYS);
+        leftCard.setMaxWidth(Double.MAX_VALUE);
+        rightCard.setMaxWidth(Double.MAX_VALUE);
 
-        mainGrid.getChildren().addAll(leftCol, rightCol);
+        mainGrid.getChildren().addAll(leftCard, rightCard);
         getChildren().add(mainGrid);
     }
 
@@ -79,513 +64,319 @@ final class UserView extends VBox {
         this(auth, null);
     }
 
-    private void initDirectoryData() {
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        userDirectory.addAll(
-                new SystemUserEntry("admin", AuthService.Role.ADMIN, "Quản trị toàn hệ thống & phân quyền", "Hoạt động", "01/01/2025"),
-                new SystemUserEntry("teller_nam", AuthService.Role.STAFF, "Nhân viên quầy giao dịch nạp/rút", "Hoạt động", "15/02/2025"),
-                new SystemUserEntry("viewer_huong", AuthService.Role.VIEWER, "Kiểm toán viên & giám sát số dư", "Hoạt động", "10/03/2025")
-        );
-    }
-
     private void buildHeader() {
-        HBox header = new HBox(16);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getStyleClass().add("header-bar");
+        VBox headerBox = new VBox(6);
 
-        VBox titleBox = new VBox(4);
-        HBox.setHgrow(titleBox, Priority.ALWAYS);
+        // Top line: Breadcrumb & Session info
+        HBox topMetaRow = new HBox();
+        topMetaRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox tagBox = new HBox(6);
-        tagBox.setAlignment(Pos.CENTER_LEFT);
-        tagBox.getStyleClass().add("header-badge-tag");
-        tagBox.setMaxWidth(Double.NEGATIVE_INFINITY);
-        Circle tagDot = new Circle(3.0);
-        tagDot.getStyleClass().add("header-badge-tag-dot");
-        Label tagText = new Label("QUẢN TRỊ HỆ THỐNG · PHÂN QUYỀN");
-        tagText.getStyleClass().add("header-badge-tag-text");
-        tagBox.getChildren().addAll(tagDot, tagText);
+        Label lblBreadcrumb = new Label("NovaBank / Quản trị");
+        lblBreadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B; -fx-font-weight: 500;");
 
-        Label title = new Label("Người dùng & quyền truy cập");
-        title.getStyleClass().add("header-greeting");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label subtitle = new Label("Khởi tạo nhân sự điều hành, phân quyền đa tầng và kiểm soát truy cập hệ thống");
-        subtitle.getStyleClass().add("header-subtitle");
+        String sessionRole = (currentUser != null && currentUser.role() != null)
+                ? currentUser.role().name()
+                : "ADMIN";
+        Label lblSession = new Label("Phiên đăng nhập: " + sessionRole);
+        lblSession.setStyle("-fx-font-size: 12px; -fx-text-fill: #334155; -fx-font-weight: 700;");
 
-        titleBox.getChildren().addAll(tagBox, title, subtitle);
+        topMetaRow.getChildren().addAll(lblBreadcrumb, spacer, lblSession);
 
-        // Right side badges
-        HBox rightControls = new HBox(10);
-        rightControls.setAlignment(Pos.CENTER_RIGHT);
+        // Main Title
+        Label lblTitle = new Label("Người dùng & quyền truy cập");
+        lblTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
 
-        HBox rbacBadge = new HBox(6);
-        rbacBadge.setAlignment(Pos.CENTER_LEFT);
-        rbacBadge.setStyle("-fx-background-color: #EFF6FF; -fx-border-color: #BFDBFE; -fx-border-radius: 16px; -fx-background-radius: 16px; -fx-padding: 4px 10px;");
-        Label lblRbacTag = new Label("RBAC Model: 3 Roles");
-        lblRbacTag.setStyle("-fx-text-fill: #1D4ED8; -fx-font-size: 11px; -fx-font-weight: 700;");
-        rbacBadge.getChildren().add(lblRbacTag);
+        // Subtitle
+        Label lblSubtitle = new Label("Tạo tài khoản đăng nhập và chọn vai trò phù hợp");
+        lblSubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748B;");
 
-        HBox guardBadge = new HBox(6);
-        guardBadge.setAlignment(Pos.CENTER_LEFT);
-        guardBadge.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 16px; -fx-background-radius: 16px; -fx-padding: 4px 10px;");
-        Circle dotGuard = new Circle(3.5, Color.web("#00C476"));
-        Label lblGuard = new Label("Security Gatekeeper: Active");
-        lblGuard.setStyle("-fx-text-fill: #475569; -fx-font-size: 11px; -fx-font-weight: 600;");
-        guardBadge.getChildren().addAll(dotGuard, lblGuard);
-
-        rightControls.getChildren().addAll(rbacBadge, guardBadge);
-        header.getChildren().addAll(titleBox, rightControls);
-        getChildren().add(header);
+        headerBox.getChildren().addAll(topMetaRow, lblTitle, lblSubtitle);
+        getChildren().add(headerBox);
     }
 
-    private VBox buildLeftColumn() {
-        VBox leftCol = new VBox(16);
+    private VBox buildLeftCard() {
+        VBox card = new VBox(16);
+        card.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; -fx-padding: 24px; " +
+                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0, 0, 2);");
 
-        // 1. Create User Card
-        VBox createCard = new VBox(14);
-        createCard.getStyleClass().add("card");
-        createCard.setStyle("-fx-padding: 22;");
+        Label cardTitle = new Label("Tạo người dùng");
+        cardTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
 
-        HBox cardHeader = new HBox(10);
-        cardHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox form = new VBox(14);
 
-        StackPane iconBox = new StackPane();
-        iconBox.setStyle("-fx-background-color: rgba(37, 99, 235, 0.12); -fx-background-radius: 8px; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;");
-        SVGPath userSvg = new SVGPath();
-        userSvg.setContent("M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z");
-        userSvg.setStyle("-fx-fill: #2563EB; -fx-scale-x: 0.8; -fx-scale-y: 0.8;");
-        iconBox.getChildren().add(userSvg);
-
-        VBox titleArea = new VBox(2);
-        Label title = new Label("Tạo người dùng mới");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
-        Label subtitle = new Label("Cấp tài khoản vận hành máy trạm cục bộ (Local Operator)");
-        subtitle.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
-        titleArea.getChildren().addAll(title, subtitle);
-
-        cardHeader.getChildren().addAll(iconBox, titleArea);
-
-        // Form Fields
-        VBox form = new VBox(12);
-
-        // Username
+        // 1. Tên đăng nhập
         VBox grpUsername = new VBox(4);
-        Label lblUname = new Label("Tên đăng nhập mới *");
-        lblUname.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
-        txtUsername.setPromptText("Ví dụ: teller_mai");
-        txtUsername.getStyleClass().add("form-input");
-        Label lblUnameHint = new Label("3–32 ký tự, không dấu, chữ cái hoặc số.");
+        Label lblUname = new Label("Tên đăng nhập");
+        lblUname.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
+        txtUsername.setPromptText("Nhập thông tin");
+        txtUsername.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-padding: 9 12; -fx-font-size: 13px; -fx-text-fill: #0F172A;");
+        Label lblUnameHint = new Label("3-32 chữ/số/gạch dưới");
         lblUnameHint.setStyle("-fx-font-size: 11px; -fx-text-fill: #94A3B8;");
         grpUsername.getChildren().addAll(lblUname, txtUsername, lblUnameHint);
 
-        // Password
+        // 2. Mật khẩu
         VBox grpPassword = new VBox(4);
-        Label lblPwd = new Label("Mật khẩu ban đầu *");
-        lblPwd.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
-        HBox pwdWrapper = createPasswordInput(txtPassword, txtPasswordPlain, "Tối thiểu 8 ký tự theo chuẩn ngân hàng");
-        Label lblPwdHint = new Label("Người dùng có thể đổi mật khẩu sau tại mục Hồ sơ.");
+        Label lblPwd = new Label("Mật khẩu");
+        lblPwd.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
+
+        StackPane pwdWrapper = new StackPane();
+        pwdWrapper.setAlignment(Pos.CENTER_RIGHT);
+        txtPassword.setPromptText("Nhập thông tin");
+        txtPassword.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-padding: 9 36 9 12; -fx-font-size: 13px; -fx-text-fill: #0F172A;");
+
+        SVGPath lockIcon = new SVGPath();
+        lockIcon.setContent("M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z");
+        lockIcon.setStyle("-fx-fill: #94A3B8; -fx-scale-x: 0.65; -fx-scale-y: 0.65;");
+        StackPane.setMargin(lockIcon, new Insets(0, 10, 0, 0));
+        pwdWrapper.getChildren().addAll(txtPassword, lockIcon);
+
+        Label lblPwdHint = new Label("Tối thiểu 8 ký tự");
         lblPwdHint.setStyle("-fx-font-size: 11px; -fx-text-fill: #94A3B8;");
         grpPassword.getChildren().addAll(lblPwd, pwdWrapper, lblPwdHint);
 
-        // Role Selector with rich cards
-        VBox grpRole = new VBox(6);
-        Label lblRole = new Label("Vai trò & Quyền hạn *");
-        lblRole.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
+        // 3. Vai trò
+        VBox grpRole = new VBox(4);
+        Label lblRole = new Label("Vai trò");
+        lblRole.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
 
-        rbStaff.setToggleGroup(roleToggleGroup);
-        rbAdmin.setToggleGroup(roleToggleGroup);
-        rbViewer.setToggleGroup(roleToggleGroup);
-        rbStaff.setSelected(true);
-
-        VBox roleOptions = new VBox(6);
-        roleOptions.getChildren().addAll(
-                buildRoleChoiceCard(rbStaff, "STAFF", "Nhân viên quầy giao dịch (Nạp, rút, chuyển khoản)", "#2563EB", "#DBEAFE"),
-                buildRoleChoiceCard(rbAdmin, "ADMIN", "Quản trị viên toàn quyền (Mở TK, Tạo user, Proxy Demo)", "#059669", "#D1FAE5"),
-                buildRoleChoiceCard(rbViewer, "VIEWER", "Kiểm toán viên chỉ xem dữ liệu (Không được giao dịch)", "#475569", "#E2E8F0")
-        );
-
-        grpRole.getChildren().addAll(lblRole, roleOptions);
-
-        // Action Buttons
-        HBox actionRow = new HBox(10);
-        actionRow.setAlignment(Pos.CENTER_RIGHT);
-        actionRow.setStyle("-fx-padding: 8 0 0 0;");
-
-        Button btnReset = new Button("⟲ Nhập lại");
-        btnReset.getStyleClass().add("btn-secondary");
-        btnReset.setOnAction(e -> {
-            txtUsername.clear();
-            txtPassword.clear();
-            txtPasswordPlain.clear();
-            rbStaff.setSelected(true);
-            bannerResult.setVisible(false);
-            bannerResult.setManaged(false);
+        cbRole.getItems().setAll(AuthService.Role.STAFF, AuthService.Role.ADMIN, AuthService.Role.VIEWER);
+        cbRole.setValue(AuthService.Role.STAFF);
+        cbRole.setMaxWidth(Double.MAX_VALUE);
+        cbRole.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-font-size: 13px; -fx-cursor: hand;");
+        cbRole.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(AuthService.Role item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                    setStyle("-fx-font-size: 13px; -fx-padding: 6 10; -fx-text-fill: #0F172A;");
+                }
+            }
         });
+        cbRole.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(AuthService.Role item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                    setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #0F172A;");
+                }
+            }
+        });
+        grpRole.getChildren().addAll(lblRole, cbRole);
 
-        Button btnCreate = new Button("✓ Tạo người dùng");
-        btnCreate.getStyleClass().add("btn-primary");
-        btnCreate.setStyle("-fx-font-size: 13px; -fx-padding: 8px 20px; -fx-font-weight: 700;");
+        // Keyboard navigation
+        txtUsername.setOnAction(e -> txtPassword.requestFocus());
+        txtPassword.setOnAction(e -> handleCreateUser());
+
+        // 4. Nút Tạo người dùng
+        Button btnCreate = new Button("+ Tạo người dùng");
+        btnCreate.setStyle("-fx-background-color: #00C476; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; " +
+                "-fx-font-size: 13px; -fx-padding: 9 18; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnCreate.setOnMouseEntered(e -> btnCreate.setStyle("-fx-background-color: #00B069; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 9 18; -fx-background-radius: 6px; -fx-cursor: hand;"));
+        btnCreate.setOnMouseExited(e -> btnCreate.setStyle("-fx-background-color: #00C476; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 9 18; -fx-background-radius: 6px; -fx-cursor: hand;"));
         btnCreate.setOnAction(e -> handleCreateUser());
 
-        actionRow.getChildren().addAll(btnReset, btnCreate);
+        // 5. Khung kết quả nội tuyến
+        buildInlineResultBox();
 
-        // Result Banner (initially hidden)
-        buildResultBanner();
-
-        form.getChildren().addAll(grpUsername, grpPassword, grpRole, actionRow, bannerResult);
-        createCard.getChildren().addAll(cardHeader, form);
-
-        // 2. Telemetry Card: Active Guard
-        VBox guardCard = new VBox(10);
-        guardCard.getStyleClass().add("card");
-        guardCard.setStyle("-fx-padding: 16;");
-
-        HBox guardRow = new HBox(12);
-        guardRow.setAlignment(Pos.CENTER_LEFT);
-
-        StackPane guardIconCircle = new StackPane();
-        guardIconCircle.setStyle("-fx-background-color: #F1F5F9; -fx-background-radius: 50%; -fx-min-width: 38px; -fx-min-height: 38px; -fx-max-width: 38px; -fx-max-height: 38px;");
-        SVGPath lockSvg = new SVGPath();
-        lockSvg.setContent("M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z");
-        lockSvg.setStyle("-fx-fill: #1E293B; -fx-scale-x: 0.7; -fx-scale-y: 0.7;");
-        guardIconCircle.getChildren().add(lockSvg);
-
-        VBox guardText = new VBox(2);
-        HBox.setHgrow(guardText, Priority.ALWAYS);
-        Label lblGuardTitle = new Label("Bảo mật đa tầng (Active Guard)");
-        lblGuardTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
-        Label lblGuardDesc = new Label("Proxy-Gatekeeper kiểm tra mọi truy vấn API và quyền hạn thời gian thực");
-        lblGuardDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B;");
-        guardText.getChildren().addAll(lblGuardTitle, lblGuardDesc);
-
-        Label lblGuardStatus = new Label("Active Guard");
-        lblGuardStatus.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46; -fx-font-size: 10px; -fx-font-weight: 800; -fx-padding: 3 8; -fx-background-radius: 12px;");
-
-        guardRow.getChildren().addAll(guardIconCircle, guardText, lblGuardStatus);
-        guardCard.getChildren().add(guardRow);
-
-        leftCol.getChildren().addAll(createCard, guardCard);
-        return leftCol;
-    }
-
-    private HBox buildRoleChoiceCard(RadioButton rb, String roleName, String desc, String textColor, String badgeBg) {
-        HBox card = new HBox(10);
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 10; -fx-cursor: hand;");
-        card.setOnMouseClicked(e -> rb.setSelected(true));
-
-        Label badge = new Label(roleName);
-        badge.setStyle("-fx-background-color: " + badgeBg + "; -fx-text-fill: " + textColor + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-padding: 2 8; -fx-background-radius: 6px;");
-
-        VBox descBox = new VBox(1);
-        HBox.setHgrow(descBox, Priority.ALWAYS);
-        Label lblDesc = new Label(desc);
-        lblDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B;");
-        descBox.getChildren().add(lblDesc);
-
-        card.getChildren().addAll(rb, badge, descBox);
+        form.getChildren().addAll(grpUsername, grpPassword, grpRole, btnCreate, inlineResultBox);
+        card.getChildren().addAll(cardTitle, form);
         return card;
     }
 
-    private void buildResultBanner() {
-        bannerResult.getStyleClass().add("result-banner-success");
-        bannerResult.setVisible(false);
-        bannerResult.setManaged(false);
+    private void buildInlineResultBox() {
+        inlineResultBox.setAlignment(Pos.CENTER_LEFT);
+        inlineIconContainer.setAlignment(Pos.CENTER);
+        inlineIconContainer.getChildren().add(inlineIconSvg);
 
-        lblResultTitle.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #065F46;");
-        lblResultDetail.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #047857;");
+        VBox textBox = new VBox(2);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+        lblResultTitle.setWrapText(true);
         lblResultDetail.setWrapText(true);
-        lblResultMeta.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #059669; -fx-font-family: 'JetBrains Mono', monospace;");
+        textBox.getChildren().addAll(lblResultTitle, lblResultDetail);
 
-        bannerResult.getChildren().addAll(lblResultTitle, lblResultDetail, lblResultMeta);
+        inlineResultBox.getChildren().addAll(inlineIconContainer, textBox);
+        showEmptyResult();
     }
 
-    private VBox buildRightColumn() {
-        VBox rightCol = new VBox(16);
+    private void showEmptyResult() {
+        inlineResultBox.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; -fx-padding: 14 16;");
 
-        // 1. Directory Card
-        VBox dirCard = new VBox(12);
-        dirCard.getStyleClass().add("card");
-        dirCard.setStyle("-fx-padding: 20;");
+        // User outline icon
+        inlineIconSvg.setContent("M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z");
+        inlineIconSvg.setStyle("-fx-fill: transparent; -fx-stroke: #64748B; -fx-stroke-width: 1.5; -fx-scale-x: 0.85; -fx-scale-y: 0.85;");
 
-        HBox dirHeader = new HBox(12);
-        dirHeader.setAlignment(Pos.CENTER_LEFT);
+        lblResultTitle.setText("Chưa tạo người dùng");
+        lblResultTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
 
-        VBox dirTitleBox = new VBox(2);
-        HBox.setHgrow(dirTitleBox, Priority.ALWAYS);
-        HBox titleRow = new HBox(8);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-        Label lblDirTitle = new Label("Danh sách tài khoản hệ thống");
-        lblDirTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
-        Label lblDirTag = new Label("SQLite Directory");
-        lblDirTag.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 2 6; -fx-background-radius: 10px;");
-        titleRow.getChildren().addAll(lblDirTitle, lblDirTag);
+        lblResultDetail.setText("Kết quả gồm tên đăng nhập và vai trò sẽ xuất hiện tại đây. Không hiển thị mật khẩu.");
+        lblResultDetail.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B; -fx-line-spacing: 1.5;");
+    }
 
-        Label lblDirSubtitle = new Label("Dữ liệu tài khoản vận hành — Tự động cập nhật tức thì khi cấp mới");
-        lblDirSubtitle.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
-        dirTitleBox.getChildren().addAll(titleRow, lblDirSubtitle);
+    private void showSuccessResult(String username, AuthService.Role role) {
+        inlineResultBox.setStyle("-fx-background-color: #F0FDF4; -fx-border-color: #BBF7D0; -fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; -fx-padding: 14 16;");
 
-        // Filter Field
-        txtFilter.setPromptText("🔍 Lọc tên hoặc vai trò...");
-        txtFilter.setStyle("-fx-pref-width: 220px; -fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-size: 12px; -fx-padding: 5 10;");
-        txtFilter.textProperty().addListener((obs, oldV, newV) -> {
-            filteredDirectory.setPredicate(user -> {
-                if (newV == null || newV.isBlank()) return true;
-                String lower = newV.toLowerCase();
-                return user.username().toLowerCase().contains(lower) || user.role().name().toLowerCase().contains(lower);
-            });
-        });
+        // Check circle icon
+        inlineIconSvg.setContent("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z");
+        inlineIconSvg.setStyle("-fx-fill: #16A34A; -fx-stroke: transparent; -fx-scale-x: 0.9; -fx-scale-y: 0.9;");
 
-        dirHeader.getChildren().addAll(dirTitleBox, txtFilter);
+        lblResultTitle.setText("Đã tạo người dùng: " + username);
+        lblResultTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #15803D;");
 
-        // Table
-        buildDirectoryTable();
-        tableDirectory.setPrefHeight(230);
-        VBox.setVgrow(tableDirectory, Priority.ALWAYS);
+        lblResultDetail.setText("Vai trò: " + role.name() + " · Tài khoản đã sẵn sàng đăng nhập và hoạt động.");
+        lblResultDetail.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #166534; -fx-line-spacing: 1.5;");
+    }
 
-        dirCard.getChildren().addAll(dirHeader, tableDirectory);
+    private void showErrorResult(String errorMessage) {
+        inlineResultBox.setStyle("-fx-background-color: #FEF2F2; -fx-border-color: #FECACA; -fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; -fx-padding: 14 16;");
 
-        // 2. Access Control Matrix Card
-        VBox matrixCard = new VBox(12);
-        matrixCard.getStyleClass().add("card");
-        matrixCard.setStyle("-fx-padding: 18;");
+        // Alert icon
+        inlineIconSvg.setContent("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z");
+        inlineIconSvg.setStyle("-fx-fill: #DC2626; -fx-stroke: transparent; -fx-scale-x: 0.9; -fx-scale-y: 0.9;");
 
-        HBox matrixHeader = new HBox(8);
-        matrixHeader.setAlignment(Pos.CENTER_LEFT);
-        Label iconMatrix = new Label("📊");
-        iconMatrix.setStyle("-fx-font-size: 16px;");
-        Label lblMatrixTitle = new Label("Ma trận phân quyền (Role-Based Access Control - RBAC)");
-        lblMatrixTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
-        matrixHeader.getChildren().addAll(iconMatrix, lblMatrixTitle);
+        lblResultTitle.setText("Không thể tạo người dùng");
+        lblResultTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #B91C1C;");
 
-        GridPane matrixGrid = new GridPane();
-        matrixGrid.setHgap(10);
-        matrixGrid.setVgap(8);
-        matrixGrid.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 12;");
+        lblResultDetail.setText(errorMessage);
+        lblResultDetail.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #991B1B; -fx-line-spacing: 1.5;");
+    }
 
-        // Headers
-        matrixGrid.add(createMatrixHeader("CHỨC NĂNG HỆ THỐNG"), 0, 0);
-        matrixGrid.add(createMatrixRoleHeader("ADMIN", "#059669", "#D1FAE5"), 1, 0);
-        matrixGrid.add(createMatrixRoleHeader("STAFF", "#2563EB", "#DBEAFE"), 2, 0);
-        matrixGrid.add(createMatrixRoleHeader("VIEWER", "#475569", "#E2E8F0"), 3, 0);
+    private VBox buildRightCard() {
+        VBox card = new VBox(16);
+        card.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; -fx-padding: 24px; " +
+                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0, 0, 2);");
+
+        Label cardTitle = new Label("Hiểu quyền trước khi cấp");
+        cardTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
+
+        // Table List
+        VBox tableList = new VBox(0);
+
+        // Header Row
+        HBox headerRow = new HBox(12);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+        headerRow.setStyle("-fx-background-color: #F8FAFC; -fx-padding: 8 12; -fx-background-radius: 4px;");
+
+        Label colHeaderRole = new Label("Vai trò");
+        colHeaderRole.setPrefWidth(90);
+        colHeaderRole.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #475569;");
+
+        Label colHeaderScope = new Label("Phạm vi quyền truy cập");
+        colHeaderScope.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #475569;");
+
+        headerRow.getChildren().addAll(colHeaderRole, colHeaderScope);
+        tableList.getChildren().add(headerRow);
 
         // Rows
-        addMatrixRow(matrixGrid, 1, "Xem Dashboard & Lịch sử giao dịch", true, true, true);
-        addMatrixRow(matrixGrid, 2, "Chuyển tiền & Nạp / Rút tiền mặt", true, true, false);
-        addMatrixRow(matrixGrid, 3, "Mở tài khoản mới (Builder Pattern)", true, false, false);
-        addMatrixRow(matrixGrid, 4, "Quản lý người dùng & Đổi quyền", true, false, false);
+        tableList.getChildren().add(buildRoleRow("ADMIN", "Quản trị", "Quản lý người dùng và các công cụ quản trị."));
+        tableList.getChildren().add(createSeparator());
+        tableList.getChildren().add(buildRoleRow("STAFF", "Giao dịch", "Thực hiện nghiệp vụ giao dịch theo quyền của dịch vụ."));
+        tableList.getChildren().add(createSeparator());
+        tableList.getChildren().add(buildRoleRow("VIEWER", "Chỉ xem", "Xem thông tin; không thực hiện thao tác ghi."));
 
-        matrixCard.getChildren().addAll(matrixHeader, matrixGrid);
+        // Callout Notice Box
+        HBox calloutBox = new HBox(10);
+        calloutBox.setAlignment(Pos.CENTER_LEFT);
+        calloutBox.setStyle("-fx-background-color: #EFF6FF; -fx-border-color: #DBEAFE; -fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; -fx-padding: 12 14;");
 
-        rightCol.getChildren().addAll(dirCard, matrixCard);
-        return rightCol;
+        SVGPath infoIcon = new SVGPath();
+        infoIcon.setContent("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z");
+        infoIcon.setStyle("-fx-fill: #2563EB; -fx-scale-x: 0.85; -fx-scale-y: 0.85;");
+
+        Label lblCallout = new Label("ADMIN quản trị · STAFF giao dịch · VIEWER chỉ xem.");
+        lblCallout.setStyle("-fx-font-size: 12px; -fx-text-fill: #1D4ED8; -fx-line-spacing: 2;");
+        lblCallout.setWrapText(true);
+        HBox.setHgrow(lblCallout, Priority.ALWAYS);
+
+        calloutBox.getChildren().addAll(infoIcon, lblCallout);
+
+        card.getChildren().addAll(cardTitle, tableList, calloutBox);
+        return card;
     }
 
-    private void buildDirectoryTable() {
-        tableDirectory.setItems(filteredDirectory);
-        tableDirectory.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    private HBox buildRoleRow(String roleName, String scopeTitle, String scopeDesc) {
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setStyle("-fx-padding: 12 12;");
 
-        TableColumn<SystemUserEntry, String> colUname = new TableColumn<>("TÊN ĐĂNG NHẬP");
-        colUname.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().username()));
-        colUname.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    HBox box = new HBox(8);
-                    box.setAlignment(Pos.CENTER_LEFT);
-                    StackPane circle = new StackPane();
-                    circle.setStyle("-fx-background-color: #EFF6FF; -fx-background-radius: 50%; -fx-min-width: 26px; -fx-min-height: 26px; -fx-max-width: 26px; -fx-max-height: 26px;");
-                    Label init = new Label(item.substring(0, 1).toUpperCase());
-                    init.setStyle("-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: #2563EB;");
-                    circle.getChildren().add(init);
+        Label lblRole = new Label(roleName);
+        lblRole.setPrefWidth(90);
+        lblRole.setStyle("-fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: #059669;");
 
-                    Label name = new Label(item);
-                    name.setStyle("-fx-font-weight: 700; -fx-text-fill: #0F172A; -fx-font-size: 12px;");
-                    box.getChildren().addAll(circle, name);
-                    setGraphic(box);
-                    setText(null);
-                }
-            }
-        });
+        VBox scopeBox = new VBox(2);
+        HBox.setHgrow(scopeBox, Priority.ALWAYS);
 
-        TableColumn<SystemUserEntry, AuthService.Role> colRole = new TableColumn<>("VAI TRÒ");
-        colRole.setPrefWidth(90);
-        colRole.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().role()));
-        colRole.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(AuthService.Role role, boolean empty) {
-                super.updateItem(role, empty);
-                if (empty || role == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    Label badge = new Label(role.name());
-                    if (role == AuthService.Role.ADMIN) {
-                        badge.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-padding: 2 8; -fx-background-radius: 10px;");
-                    } else if (role == AuthService.Role.STAFF) {
-                        badge.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-padding: 2 8; -fx-background-radius: 10px;");
-                    } else {
-                        badge.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-padding: 2 8; -fx-background-radius: 10px;");
-                    }
-                    setGraphic(badge);
-                    setText(null);
-                }
-            }
-        });
+        Label lblTitle = new Label(scopeTitle);
+        lblTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
 
-        TableColumn<SystemUserEntry, String> colDesc = new TableColumn<>("MÔ TẢ QUYỀN HẠN");
-        colDesc.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().description()));
-        colDesc.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #475569;");
+        Label lblDesc = new Label(scopeDesc);
+        lblDesc.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
+        lblDesc.setWrapText(true);
 
-        TableColumn<SystemUserEntry, String> colStatus = new TableColumn<>("TRẠNG THÁI");
-        colStatus.setPrefWidth(110);
-        colStatus.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().status()));
-        colStatus.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    HBox box = new HBox(5);
-                    box.setAlignment(Pos.CENTER_LEFT);
-                    Circle dot = new Circle(3, Color.web("#10B981"));
-                    Label lbl = new Label(item);
-                    lbl.setStyle("-fx-text-fill: #059669; -fx-font-weight: 700; -fx-font-size: 11px;");
-                    box.getChildren().addAll(dot, lbl);
-                    setGraphic(box);
-                    setText(null);
-                }
-            }
-        });
-
-        TableColumn<SystemUserEntry, String> colDate = new TableColumn<>("NGÀY TẠO");
-        colDate.setPrefWidth(90);
-        colDate.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().createdAt()));
-        colDate.setStyle("-fx-font-size: 11px; -fx-text-fill: #94A3B8; -fx-font-family: 'JetBrains Mono', monospace; -fx-alignment: CENTER_RIGHT;");
-
-        tableDirectory.getColumns().setAll(colUname, colRole, colDesc, colStatus, colDate);
+        scopeBox.getChildren().addAll(lblTitle, lblDesc);
+        row.getChildren().addAll(lblRole, scopeBox);
+        return row;
     }
 
-    private Label createMatrixHeader(String text) {
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-font-size: 10.5px; -fx-font-weight: 800; -fx-text-fill: #64748B; -fx-padding: 0 0 4 0;");
-        return lbl;
-    }
-
-    private Label createMatrixRoleHeader(String role, String color, String bg) {
-        Label lbl = new Label(role);
-        lbl.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + color + "; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-padding: 2 8; -fx-background-radius: 8px; -fx-alignment: CENTER;");
-        return lbl;
-    }
-
-    private void addMatrixRow(GridPane grid, int row, String action, boolean admin, boolean staff, boolean viewer) {
-        Label lblAction = new Label(action);
-        lblAction.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #1E293B;");
-        grid.add(lblAction, 0, row);
-
-        grid.add(createCheckBadge(admin), 1, row);
-        grid.add(createCheckBadge(staff), 2, row);
-        grid.add(createCheckBadge(viewer), 3, row);
-    }
-
-    private Label createCheckBadge(boolean allowed) {
-        Label badge = new Label(allowed ? "✓ Cho phép" : "✕ Bị chặn");
-        badge.setStyle(allowed
-                ? "-fx-text-fill: #059669; -fx-font-weight: 700; -fx-font-size: 11px; -fx-alignment: CENTER;"
-                : "-fx-text-fill: #DC2626; -fx-font-weight: 700; -fx-font-size: 11px; -fx-alignment: CENTER;");
-        return badge;
-    }
-
-    private HBox createPasswordInput(PasswordField passField, TextField plainField, String prompt) {
-        passField.setPromptText(prompt);
-        plainField.setPromptText(prompt);
-        passField.getStyleClass().add("form-input");
-        plainField.getStyleClass().add("form-input");
-
-        plainField.setVisible(false);
-        plainField.setManaged(false);
-
-        passField.textProperty().bindBidirectional(plainField.textProperty());
-
-        Button btnToggle = new Button("👁");
-        btnToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand; -fx-font-size: 13px; -fx-padding: 0 4;");
-        btnToggle.setOnAction(e -> {
-            boolean showingPlain = plainField.isVisible();
-            plainField.setVisible(!showingPlain);
-            plainField.setManaged(!showingPlain);
-            passField.setVisible(showingPlain);
-            passField.setManaged(showingPlain);
-            btnToggle.setStyle(!showingPlain ? "-fx-background-color: transparent; -fx-text-fill: #2563EB; -fx-cursor: hand; -fx-font-size: 13px; -fx-padding: 0 4;"
-                    : "-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand; -fx-font-size: 13px; -fx-padding: 0 4;");
-        });
-
-        HBox wrapper = new HBox(8);
-        wrapper.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(passField, Priority.ALWAYS);
-        HBox.setHgrow(plainField, Priority.ALWAYS);
-
-        StackPane inputStack = new StackPane(passField, plainField);
-        HBox.setHgrow(inputStack, Priority.ALWAYS);
-
-        wrapper.getChildren().addAll(inputStack, btnToggle);
-        return wrapper;
+    private Region createSeparator() {
+        Region sep = new Region();
+        sep.setStyle("-fx-background-color: #F1F5F9; -fx-pref-height: 1px; -fx-min-height: 1px;");
+        return sep;
     }
 
     private void handleCreateUser() {
         String uname = txtUsername.getText().trim();
-        String pwd = txtPassword.isVisible() ? txtPassword.getText() : txtPasswordPlain.getText();
+        String pwd = txtPassword.getText();
 
         if (uname.isEmpty()) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập tên đăng nhập", "Tên đăng nhập không được để trống.");
+            showErrorResult("Vui lòng nhập tên đăng nhập.");
+            txtUsername.requestFocus();
             return;
         }
 
-        if (uname.length() < 3 || uname.length() > 32) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Định dạng không hợp lệ", "Tên đăng nhập không hợp lệ", "Độ dài tên đăng nhập phải từ 3 đến 32 ký tự.");
+        if (!uname.matches("[A-Za-z0-9_]{3,32}")) {
+            showErrorResult("Tên đăng nhập cần 3–32 ký tự chữ, số hoặc dấu gạch dưới.");
+            txtUsername.requestFocus();
             return;
         }
 
-        if (pwd.length() < 8) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Mật khẩu chưa đủ độ dài", "Mật khẩu quá ngắn", "Mật khẩu phải có tối thiểu 8 ký tự theo tiêu chuẩn bảo mật.");
+        if (pwd == null || pwd.length() < 8) {
+            showErrorResult("Mật khẩu phải có tối thiểu 8 ký tự.");
+            txtPassword.requestFocus();
             return;
         }
 
-        AuthService.Role selectedRole = rbAdmin.isSelected() ? AuthService.Role.ADMIN
-                : (rbViewer.isSelected() ? AuthService.Role.VIEWER : AuthService.Role.STAFF);
+        AuthService.Role selectedRole = cbRole.getValue();
+        if (selectedRole == null) {
+            showErrorResult("Vui lòng chọn vai trò.");
+            return;
+        }
 
         char[] secret = pwd.toCharArray();
         try {
             auth.createUser(uname, secret, selectedRole);
-
-            // Update Directory
-            String desc = switch (selectedRole) {
-                case ADMIN -> "Quản trị toàn hệ thống & phân quyền";
-                case STAFF -> "Nhân viên quầy giao dịch nạp/rút";
-                case VIEWER -> "Kiểm toán viên & giám sát số dư";
-            };
-            String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            SystemUserEntry newEntry = new SystemUserEntry(uname, selectedRole, desc, "Hoạt động", dateStr);
-            userDirectory.add(0, newEntry);
-            tableDirectory.getSelectionModel().select(newEntry);
-
-            // Show result banner
-            bannerResult.setVisible(true);
-            bannerResult.setManaged(true);
-            lblResultTitle.setText("✓ Khởi tạo tài khoản " + uname + " thành công!");
-            lblResultDetail.setText("Người dùng [" + uname + "] với vai trò [" + selectedRole + "] đã được lưu vào cơ sở dữ liệu SQLite.");
-            lblResultMeta.setText("Đồng bộ qua AuthService (Singleton) · Status: 201 CREATED");
-
+            showSuccessResult(uname, selectedRole);
             txtUsername.clear();
             txtPassword.clear();
-            txtPasswordPlain.clear();
         } catch (IllegalArgumentException | IllegalStateException exception) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Không thể tạo người dùng", null, exception.getMessage());
+            showErrorResult(exception.getMessage());
         } finally {
             Arrays.fill(secret, '\0');
         }
