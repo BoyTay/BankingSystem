@@ -4,7 +4,27 @@
 
 Tài liệu này dùng để **chạy thử thủ công trên giao diện JavaFX** và ghi nhận liệu cả mã Java lẫn hành vi người dùng của 9 pattern đã hoàn chỉnh hay chưa. Luồng được kiểm tra là `MainApp → novabank_login.fxml → NovaBankShell`; `MainLayout` cũ nằm ngoài phạm vi. Singleton được chấm là `DatabaseManager`; `UIContext` chỉ là Singleton bổ sung phục vụ giao diện.
 
-Tại thời điểm lập tài liệu, kiểm tra mã nguồn và **20/20 test Maven đã đạt**. Điều đó xác nhận các luồng được test bằng mã, **chưa xác nhận các bước GUI dưới đây đã chạy đạt**. Chỉ đánh dấu `[x]` sau khi thực sự thao tác và lưu bằng chứng; giữ `[ ]` nếu chưa chạy.
+Tại thời điểm cập nhật, **20/20 test Maven đã đạt**, gồm bài test tự động thao tác các control JavaFX thật trên `NovaBankShell`. Các ô kiểm thử thủ công trong mục 3 vẫn để trống cho những bước chưa được bài test tự động bao phủ; không suy từ một phép kiểm tra cốt lõi sang toàn bộ ca phụ của pattern.
+
+### Kết quả chạy tự động — 02/10/2026
+
+Lệnh chạy: `.\mvnw.cmd test`. Báo cáo Surefire: `target/surefire-reports/TEST-com.banking.NovaBankFxmlTest.xml`; log chi tiết của lần chạy: `target/pattern-full-suite.log`. Bài test tạo dữ liệu trong SQLite kiểm thử do Maven cấu hình hoặc thư mục tạm của test, mở JavaFX `Stage`, tải FXML, thay đổi control và bấm nút/hộp xác nhận; không sử dụng cơ sở dữ liệu người dùng.
+
+- [x] **Singleton:** trạng thái sidebar chứa `Singleton @...` và giữ nguyên sau khi chuyển màn.
+- [x] **Builder:** nhập tên và 200.000 VND trên form `Open Account`, bấm **Mở tài khoản**, nhận số tài khoản mới và nhãn `Đã lưu vào SQLite`.
+- [x] **Strategy:** đổi chính tài khoản vừa tạo `STANDARD → PREMIUM → STANDARD` qua control `Accounts`, xác nhận hộp thoại, kiểm tra SQLite tải lại gói PREMIUM, phí xem trước chuyển 10.000 VND đổi `0 → 10 VND`.
+- [x] **State:** bấm khóa rồi mở khóa trên `Accounts`; khi khóa, màn `Cash` vô hiệu nút rút tiền và báo tài khoản bị khóa.
+- [x] **Proxy:** tại `Proxy Demo`, vai trò READONLY xem được số dư; hai nút Nạp/Rút hiển thị từ chối, audit log tăng và số dư không đổi.
+- [x] **Prototype:** lưu mẫu A → B rồi bấm **Sao chép**; danh sách tăng một mục và bản sao có dấu `(Bản sao)`.
+- [x] **Observer:** sau nhiều lần chuyển màn, nạp 1.000 VND qua `Cash` tạo đúng một thông báo UI cho tài khoản nguồn; danh sách Overview dùng chính `notificationLogs`.
+- [x] **Facade:** chuyển 10.000 VND qua màn `Transfer & Pay` và hộp xác nhận; phí 10 VND, tài khoản nguồn giảm 10.010 VND, tài khoản nhận tăng 10.000 VND, ledger có giao dịch mới.
+- [x] **Command:** bấm **Hoàn tác** trên `Transactions`; hai số dư trở lại trước chuyển khoản, bộ đếm Undo giảm một và bản ghi đảo tham chiếu mã giao dịch gốc.
+
+**Chấm tự động: 9/9 pattern đạt luồng cốt lõi; 20/20 test đạt, 0 failure/error.** Kết quả này là kiểm tra tương tác JavaFX tự động, chưa đánh giá bằng mắt bố cục, khả năng đọc và cảm nhận thao tác. Bài test tạo `NovaBankShell` với người dùng ADMIN giả lập sau khi xác nhận `MainApp` khởi động; thao tác đăng nhập bằng mật khẩu thật không nằm trong 9 phép kiểm tra trên.
+
+**Các ca vẫn cần người kiểm tra trong mục 3:** Singleton khi SQLite lỗi; Builder tên trống; Strategy khởi động lại toàn bộ ứng dụng và quyền đổi gói của người không phải ADMIN; State thử chuyển tiền khi khóa; Prototype xóa bản sao và giữ mẫu gốc; Observer hai lần nạp liên tiếp sau refresh; Facade lỗi lưu giao dịch; Command khôi phục stack sau khởi động lại và trường hợp tài khoản nhận thiếu tiền để Undo.
+
+**Cảnh báo không làm hỏng test:** JavaFX ghi cảnh báo CSS cho `-fx-max-width: -Infinity` và `-fx-pref-width: -Infinity` tại `.header-badge-tag` trong `novabank.css`; cần xem lại bố cục badge bằng mắt, không tính cảnh báo này là lỗi logic của pattern.
 
 ### Quy ước ghi kết quả
 
@@ -253,9 +273,10 @@ Mức độ: chặn demo / sai dữ liệu / sai hiển thị
 
 ## 5. Kết luận phiên kiểm thử
 
-- Số pattern đạt thực chạy: `____ / 9`
-- Pattern không đạt hoặc chưa kiểm: `________________`
+- Số pattern đạt luồng JavaFX tự động: `9 / 9`
+- Số pattern hoàn tất toàn bộ ca thủ công ở mục 3: `____ / 9`
+- Ca thủ công không đạt hoặc chưa kiểm: `________________`
 - Lỗi cần sửa trước khi demo/bảo vệ: `________________`
 - Người xác nhận và thời điểm: `________________`
 
-**Kết luận hiện tại:** mã và 20 test tự động đã được kiểm tra ở lượt phát triển trước; **trạng thái chạy thủ công của 9 pattern vẫn là “Chưa kiểm” cho đến khi thực hiện các bước trong tài liệu này**.
+**Kết luận hiện tại:** 9 pattern đều đạt phép kiểm tra tương tác JavaFX cốt lõi trong cùng một phiên test, toàn suite đạt 20/20; các ca phụ và đánh giá trực quan thủ công vẫn là “Chưa kiểm” cho đến khi thực hiện các bước còn trống trong tài liệu này.
