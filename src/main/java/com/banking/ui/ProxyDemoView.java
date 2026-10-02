@@ -3,25 +3,22 @@ package com.banking.ui;
 import com.banking.model.Account;
 import com.banking.pattern.structural.AccountProxy;
 import com.banking.pattern.structural.RealAccount;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.SVGPath;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Màn hình Mô phỏng phân quyền truy cập (Protection Proxy Pattern - RBAC).
- * Thiết kế chuẩn theo Stitch Design System & Figma Brief:
- * - Cột trái: Cấu hình phiên truy cập Proxy, các phương thức AccountProxy & Outcome Panel trực quan hóa kết quả (Được phép / Bị từ chối)
- * - Cột phải: Nhật ký can thiệp của Proxy (Audit Console phong cách Dark Terminal)
- * - Khối dưới: Sơ đồ kiến trúc luồng dữ liệu (Client ➔ AccountProxy ➔ RBAC ➔ RealAccount)
+ * Màn hình Mô phỏng phân quyền Proxy (Protection Proxy Pattern - RBAC).
+ * Thiết kế giao diện theo phong cách Figma với dữ liệu vận hành 100% thực tế từ SQLite:
+ * - Header: Breadcrumb "NovaBank / Quản trị", phiên đăng nhập ADMIN, tiêu đề và badge Proxy.
+ * - Cột trái: Kịch bản thử quyền với tài khoản thật (số dư thực tế từ cơ sở dữ liệu),
+ *             vai trò mô phỏng (ADMIN, USER, READONLY), số tiền thử nghiệm và 3 nút hành động.
+ *             Khung Outcome Panel nội tuyến phản hồi kết quả thực thi thời gian thực.
+ * - Cột phải trên: Nhật ký truy cập (Audit Console) ghi nhận các thao tác thực tế theo thời gian thực.
+ * - Cột phải dưới: Sơ đồ luồng "Cách Proxy kiểm tra quyền" với 4 bước trực quan và 3 điểm cốt lõi.
  */
 public class ProxyDemoView extends VBox {
 
@@ -35,131 +32,111 @@ public class ProxyDemoView extends VBox {
     private final RadioButton rbAdmin = new RadioButton("ADMIN");
     private final RadioButton rbUser = new RadioButton("USER");
     private final RadioButton rbReadOnly = new RadioButton("READONLY");
-    private final TextField txtAmount = new TextField("100000");
+    private final TextField txtAmount = new TextField("100,000");
 
     // Immediate Outcome Panel
     private final VBox outcomePanel = new VBox(8);
     private final Label lblOutcomeTitle = new Label();
-    private final Label lblOutcomeCode = new Label();
-    private final Label lblOutcomeMethod = new Label();
-    private final Label lblOutcomeRole = new Label();
-    private final Label lblOutcomeReason = new Label();
-    private final Label lblOutcomeBalanceState = new Label();
+    private final Label lblOutcomeDetail = new Label();
+    private final Label lblOutcomeDesc = new Label();
+    private final Label lblOutcomeBalance = new Label();
 
     // Audit Log Console
-    private final TextFlow logFlow = new TextFlow();
-    private final ScrollPane logScroll = new ScrollPane(logFlow);
+    private final VBox logContainer = new VBox(8);
+    private final ScrollPane logScroll = new ScrollPane(logContainer);
+    private final Label lblEmptyLog = new Label("Chưa có nhật ký truy cập. Hãy chọn tài khoản và thử một thao tác bên trái.");
 
     public ProxyDemoView() {
-        setSpacing(18);
+        setSpacing(20);
         getStyleClass().add("content-pane");
+        setStyle("-fx-background-color: #F8FAFC; -fx-padding: 24 32;");
 
         buildHeader();
 
-        // TOP SECTION: 2 Cột (Trái: Scenario + Outcome / Phải: Audit Console)
-        HBox topSection = new HBox(20);
-        topSection.setAlignment(Pos.TOP_LEFT);
+        // 2 CỘT CHÍNH
+        HBox mainGrid = new HBox(24);
+        mainGrid.setAlignment(Pos.TOP_LEFT);
 
-        VBox controlCol = buildControlSection();
-        VBox consoleCol = buildAuditConsole();
+        VBox leftCol = buildLeftCard();
+        VBox rightCol = buildRightColumn();
 
-        controlCol.setPrefWidth(600);
-        controlCol.setMinWidth(480);
-        HBox.setHgrow(controlCol, Priority.ALWAYS);
+        HBox.setHgrow(leftCol, Priority.ALWAYS);
+        HBox.setHgrow(rightCol, Priority.ALWAYS);
+        leftCol.setMaxWidth(Double.MAX_VALUE);
+        rightCol.setMaxWidth(Double.MAX_VALUE);
 
-        consoleCol.setPrefWidth(460);
-        consoleCol.setMinWidth(380);
+        mainGrid.getChildren().addAll(leftCol, rightCol);
+        getChildren().add(mainGrid);
 
-        topSection.getChildren().addAll(controlCol, consoleCol);
-
-        // BOTTOM SECTION: Sơ đồ luồng kiến trúc (How It Works)
-        VBox architectureCard = buildArchitectureFlowCard();
-
-        getChildren().addAll(topSection, architectureCard);
+        showEmptyLogPrompt();
 
         ctx.addDataChangeListener(this::refresh);
         refresh();
     }
 
     private void buildHeader() {
-        HBox header = new HBox(16);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getStyleClass().add("header-bar");
+        VBox headerBox = new VBox(6);
 
-        VBox titleBox = new VBox(4);
-        HBox.setHgrow(titleBox, Priority.ALWAYS);
+        // Top line: Breadcrumb & Session info
+        HBox topMetaRow = new HBox();
+        topMetaRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox tagBox = new HBox(6);
-        tagBox.setAlignment(Pos.CENTER_LEFT);
-        tagBox.getStyleClass().add("header-badge-tag");
-        tagBox.setMaxWidth(Double.NEGATIVE_INFINITY);
-        Circle tagDot = new Circle(3.0);
-        tagDot.getStyleClass().add("header-badge-tag-dot");
-        Label tagText = new Label("KIẾN TRÚC MẪU CẤU TRÚC · PROTECTION PROXY");
-        tagText.getStyleClass().add("header-badge-tag-text");
-        tagBox.getChildren().addAll(tagDot, tagText);
+        Label lblBreadcrumb = new Label("NovaBank / Quản trị");
+        lblBreadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B; -fx-font-weight: 500;");
 
-        Label title = new Label("Mô phỏng phân quyền Proxy");
-        title.getStyleClass().add("header-greeting");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label subtitle = new Label("Mô phỏng cơ chế kiểm soát truy cập bảo mật (Protection Proxy & RBAC) can thiệp trước khi gọi đối tượng thực");
-        subtitle.getStyleClass().add("header-subtitle");
+        Label lblSession = new Label("Phiên đăng nhập: ADMIN");
+        lblSession.setStyle("-fx-font-size: 12px; -fx-text-fill: #334155; -fx-font-weight: 700;");
 
-        titleBox.getChildren().addAll(tagBox, title, subtitle);
+        topMetaRow.getChildren().addAll(lblBreadcrumb, spacer, lblSession);
 
-        // Right Pattern Badges
-        HBox patternBadges = new HBox(8);
-        patternBadges.setAlignment(Pos.CENTER_RIGHT);
-        patternBadges.getChildren().addAll(
-                UiUtils.createPatternBadge("Proxy (AccountProxy)", "structural"),
-                UiUtils.createPatternBadge("Protection Proxy (RBAC)", "structural")
-        );
+        // Title row with badge
+        HBox titleRow = new HBox(10);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        header.getChildren().addAll(titleBox, patternBadges);
-        getChildren().add(header);
+        Label lblTitle = new Label("Mô phỏng phân quyền Proxy");
+        lblTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
+
+        Label badgeProxy = new Label("Proxy");
+        badgeProxy.setStyle("-fx-background-color: #EFF6FF; -fx-text-fill: #2563EB; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 3 8; -fx-background-radius: 12px;");
+
+        titleRow.getChildren().addAll(lblTitle, badgeProxy);
+
+        // Subtitle
+        Label lblSubtitle = new Label("Thử thao tác theo vai trò và đọc kết quả kiểm tra quyền ngay lập tức");
+        lblSubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748B;");
+
+        headerBox.getChildren().addAll(topMetaRow, titleRow, lblSubtitle);
+        getChildren().add(headerBox);
     }
 
-    private VBox buildControlSection() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setStyle("-fx-padding: 20;");
+    private VBox buildLeftCard() {
+        VBox card = new VBox(16);
+        card.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; -fx-padding: 24px; " +
+                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0, 0, 2);");
 
-        // Section Title
-        HBox cardTitleBox = new HBox(10);
-        cardTitleBox.setAlignment(Pos.CENTER_LEFT);
+        Label cardTitle = new Label("Kịch bản thử quyền");
+        cardTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
 
-        StackPane iconBox = new StackPane();
-        iconBox.setStyle("-fx-background-color: rgba(37, 99, 235, 0.12); -fx-background-radius: 8px; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;");
-        SVGPath shieldSvg = new SVGPath();
-        shieldSvg.setContent("M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z");
-        shieldSvg.setStyle("-fx-fill: #2563EB; -fx-scale-x: 0.8; -fx-scale-y: 0.8;");
-        iconBox.getChildren().add(shieldSvg);
+        VBox form = new VBox(14);
 
-        VBox titleArea = new VBox(2);
-        Label title = new Label("Cấu hình phiên truy cập Proxy");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
-        Label subtitle = new Label("Chọn tài khoản, gán vai trò mô phỏng và kích hoạt phương thức bảo vệ");
-        subtitle.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
-        titleArea.getChildren().addAll(title, subtitle);
-
-        cardTitleBox.getChildren().addAll(iconBox, titleArea);
-
-        // Inputs Form
-        VBox form = new VBox(12);
-
-        // 1. Account Selector
+        // 1. Tài khoản mục tiêu (Hiển thị số tài khoản, chủ sở hữu và số dư thật)
         VBox grpAcc = new VBox(4);
-        Label lblAcc = new Label("Tài khoản mục tiêu (Target RealAccount) *");
-        lblAcc.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
+        Label lblAcc = new Label("Tài khoản mục tiêu");
+        lblAcc.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
 
         cbAccount.setMaxWidth(Double.MAX_VALUE);
-        cbAccount.getStyleClass().add("account-selector-combo");
+        cbAccount.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
         cbAccount.setCellFactory(p -> new ListCell<>() {
             @Override
             protected void updateItem(Account item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) setText(null);
-                else setText(item.getAccountNumber() + " - " + item.getOwnerName() + " (" + UiUtils.formatVnd(item.getBalance()) + ")");
+                else setText(item.getAccountNumber() + " — " + item.getOwnerName() + " (" + UiUtils.formatVnd(item.getBalance()) + ")");
             }
         });
         cbAccount.setButtonCell(new ListCell<>() {
@@ -167,92 +144,74 @@ public class ProxyDemoView extends VBox {
             protected void updateItem(Account item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) setText(null);
-                else setText(item.getAccountNumber() + " - " + item.getOwnerName() + " (" + UiUtils.formatVnd(item.getBalance()) + ")");
+                else setText(item.getAccountNumber() + " — " + item.getOwnerName() + " (" + UiUtils.formatVnd(item.getBalance()) + ")");
             }
         });
         grpAcc.getChildren().addAll(lblAcc, cbAccount);
 
-        // 2. Role Selector with cards
+        // 2. Vai trò mô phỏng (Inline RadioButtons)
         VBox grpRole = new VBox(6);
-        Label lblRole = new Label("Vai trò mô phỏng (Simulated Role) *");
-        lblRole.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
+        Label lblRole = new Label("Vai trò mô phỏng");
+        lblRole.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
 
         rbAdmin.setToggleGroup(roleGroup);
         rbUser.setToggleGroup(roleGroup);
         rbReadOnly.setToggleGroup(roleGroup);
-        rbAdmin.setSelected(true);
+        rbReadOnly.setSelected(true);
 
-        VBox roleChoices = new VBox(6);
-        roleChoices.getChildren().addAll(
-                buildRoleChoice(rbAdmin, "ADMIN", "Quản trị viên — Toàn quyền truy cập và chỉnh sửa số dư", "#065F46", "#D1FAE5"),
-                buildRoleChoice(rbUser, "USER", "Khách hàng — Có quyền đọc số dư và nạp / rút tiền mặt", "#1D4ED8", "#DBEAFE"),
-                buildRoleChoice(rbReadOnly, "READONLY", "Kiểm toán viên — CHỈ ĐỌC số dư (Bị chặn thao tác nạp/rút)", "#991B1B", "#FEE2E2")
-        );
+        rbAdmin.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B; -fx-cursor: hand;");
+        rbUser.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B; -fx-cursor: hand;");
+        rbReadOnly.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B; -fx-cursor: hand;");
 
-        Label lblRoleNote = new Label("💡 Lưu ý: Vai trò ở đây dùng để trình diễn AccountProxy.checkPermission(); không thay đổi phiên đăng nhập thực tế.");
-        lblRoleNote.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B; -fx-line-spacing: 2px;");
+        HBox radioRow = new HBox(20);
+        radioRow.setAlignment(Pos.CENTER_LEFT);
+        radioRow.getChildren().addAll(rbAdmin, rbUser, rbReadOnly);
 
-        grpRole.getChildren().addAll(lblRole, roleChoices, lblRoleNote);
+        Label lblRoleNote = new Label("Vai trò ở đây dùng để trình diễn AccountProxy; không thay đổi vai trò đăng nhập NovaBank");
+        lblRoleNote.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #64748B;");
 
-        // 3. Amount Input
+        grpRole.getChildren().addAll(lblRole, radioRow, lblRoleNote);
+
+        // 3. Số tiền thử (VND)
         VBox grpAmount = new VBox(4);
-        Label lblAmount = new Label("Số tiền thử nghiệm giao dịch (VND) *");
-        lblAmount.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
-        txtAmount.getStyleClass().add("form-input");
+        Label lblAmount = new Label("Số tiền thử (VND)");
+        lblAmount.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
+        txtAmount.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-padding: 9 12; -fx-font-size: 13px; -fx-text-fill: #0F172A;");
         grpAmount.getChildren().addAll(lblAmount, txtAmount);
 
-        // 4. Method Trigger Buttons
-        VBox grpActions = new VBox(8);
-        Label lblActionTitle = new Label("Gọi phương thức qua AccountProxy:");
-        lblActionTitle.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: #1E293B;");
+        // 4. Action Buttons (Xem số dư, Nạp tiền, Rút tiền)
+        HBox btnRow = new HBox(12);
+        btnRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox btnRow = new HBox(10);
-        Button btnGetBalance = new Button("👁 getBalance()");
-        btnGetBalance.getStyleClass().add("btn-secondary");
-        btnGetBalance.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-padding: 8 16;");
-        HBox.setHgrow(btnGetBalance, Priority.ALWAYS);
+        Button btnGetBalance = new Button("Xem số dư");
+        btnGetBalance.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-weight: 600; -fx-font-size: 13px; -fx-padding: 8 16; -fx-cursor: hand;");
+        btnGetBalance.setOnMouseEntered(e -> btnGetBalance.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #94A3B8; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-weight: 600; -fx-font-size: 13px; -fx-padding: 8 16; -fx-cursor: hand;"));
+        btnGetBalance.setOnMouseExited(e -> btnGetBalance.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-weight: 600; -fx-font-size: 13px; -fx-padding: 8 16; -fx-cursor: hand;"));
         btnGetBalance.setOnAction(e -> testGetBalance());
 
-        Button btnDeposit = new Button("➕ deposit()");
-        btnDeposit.getStyleClass().add("btn-primary");
-        btnDeposit.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-padding: 8 16;");
-        HBox.setHgrow(btnDeposit, Priority.ALWAYS);
+        Button btnDeposit = new Button("Nạp tiền");
+        btnDeposit.setStyle("-fx-background-color: #00C476; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; " +
+                "-fx-font-size: 13px; -fx-padding: 8 18; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnDeposit.setOnMouseEntered(e -> btnDeposit.setStyle("-fx-background-color: #00B069; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 8 18; -fx-background-radius: 6px; -fx-cursor: hand;"));
+        btnDeposit.setOnMouseExited(e -> btnDeposit.setStyle("-fx-background-color: #00C476; -fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 8 18; -fx-background-radius: 6px; -fx-cursor: hand;"));
         btnDeposit.setOnAction(e -> testDeposit());
 
-        Button btnWithdraw = new Button("➖ withdraw()");
-        btnWithdraw.getStyleClass().add("btn-secondary");
-        btnWithdraw.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-padding: 8 16;");
-        HBox.setHgrow(btnWithdraw, Priority.ALWAYS);
+        Button btnWithdraw = new Button("Rút tiền");
+        btnWithdraw.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #FCA5A5; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-text-fill: #DC2626; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 8 18; -fx-cursor: hand;");
+        btnWithdraw.setOnMouseEntered(e -> btnWithdraw.setStyle("-fx-background-color: #FEF2F2; -fx-border-color: #EF4444; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #DC2626; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 8 18; -fx-cursor: hand;"));
+        btnWithdraw.setOnMouseExited(e -> btnWithdraw.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #FCA5A5; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #DC2626; -fx-font-weight: 700; -fx-font-size: 13px; -fx-padding: 8 18; -fx-cursor: hand;"));
         btnWithdraw.setOnAction(e -> testWithdraw());
 
         btnRow.getChildren().addAll(btnGetBalance, btnDeposit, btnWithdraw);
 
-        Label lblDepositNotice = new Label("● Nạp / rút qua Proxy sẽ thay đổi số dư thực tế của tài khoản trong phiên mô phỏng.");
-        lblDepositNotice.setStyle("-fx-font-size: 11px; -fx-text-fill: #94A3B8;");
-
-        grpActions.getChildren().addAll(lblActionTitle, btnRow, lblDepositNotice);
-
-        // 5. Outcome Panel (Feedback card)
+        // 5. Outcome Panel (Hiển thị kết quả thực thi khi người dùng bấm thao tác)
         buildOutcomePanel();
 
-        form.getChildren().addAll(grpAcc, grpRole, grpAmount, grpActions, outcomePanel);
-        card.getChildren().addAll(cardTitleBox, form);
-        return card;
-    }
-
-    private HBox buildRoleChoice(RadioButton rb, String name, String desc, String color, String bg) {
-        HBox card = new HBox(10);
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 10; -fx-cursor: hand;");
-        card.setOnMouseClicked(e -> rb.setSelected(true));
-
-        Label badge = new Label(name);
-        badge.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + color + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-padding: 2 6; -fx-background-radius: 6px;");
-
-        Label lblDesc = new Label(desc);
-        lblDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
-
-        card.getChildren().addAll(rb, badge, lblDesc);
+        form.getChildren().addAll(grpAcc, grpRole, grpAmount, btnRow, outcomePanel);
+        card.getChildren().addAll(cardTitle, form);
         return card;
     }
 
@@ -260,203 +219,174 @@ public class ProxyDemoView extends VBox {
         outcomePanel.setVisible(false);
         outcomePanel.setManaged(false);
 
-        HBox topRow = new HBox();
-        topRow.setAlignment(Pos.CENTER_LEFT);
-        lblOutcomeTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800;");
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-        lblOutcomeCode.setStyle("-fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 2 6; -fx-background-radius: 6px;");
-        topRow.getChildren().addAll(lblOutcomeTitle, sp, lblOutcomeCode);
+        lblOutcomeTitle.setWrapText(true);
+        lblOutcomeDetail.setWrapText(true);
+        lblOutcomeDesc.setWrapText(true);
+        lblOutcomeBalance.setWrapText(true);
 
-        HBox metaRow = new HBox(16);
-        metaRow.setStyle("-fx-background-color: rgba(255, 255, 255, 0.7); -fx-padding: 8; -fx-background-radius: 6px;");
-        VBox col1 = new VBox(2, new Label("Phương thức:"), lblOutcomeMethod);
-        col1.getChildren().get(0).setStyle("-fx-font-size: 10px; -fx-text-fill: #64748B;");
-        lblOutcomeMethod.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-font-family: 'JetBrains Mono', monospace;");
-
-        VBox col2 = new VBox(2, new Label("Vai trò thực thi:"), lblOutcomeRole);
-        col2.getChildren().get(0).setStyle("-fx-font-size: 10px; -fx-text-fill: #64748B;");
-        lblOutcomeRole.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700;");
-
-        HBox.setHgrow(col1, Priority.ALWAYS);
-        HBox.setHgrow(col2, Priority.ALWAYS);
-        metaRow.getChildren().addAll(col1, col2);
-
-        lblOutcomeReason.setStyle("-fx-font-size: 11.5px; -fx-line-spacing: 2px;");
-        lblOutcomeReason.setWrapText(true);
-
-        lblOutcomeBalanceState.setStyle("-fx-font-size: 11px; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-weight: 700;");
-
-        outcomePanel.getChildren().addAll(topRow, metaRow, lblOutcomeReason, lblOutcomeBalanceState);
+        outcomePanel.getChildren().addAll(lblOutcomeTitle, lblOutcomeDetail, lblOutcomeDesc, lblOutcomeBalance);
     }
 
-    private void showOutcome(boolean allowed, String method, AccountProxy.Role role, String reason, String balanceState) {
+    private void showOutcome(boolean allowed, String methodCall, AccountProxy.Role role, String reason, String balanceState) {
         outcomePanel.setVisible(true);
         outcomePanel.setManaged(true);
-        outcomePanel.getStyleClass().clear();
 
         if (allowed) {
-            outcomePanel.getStyleClass().add("outcome-card-allowed");
-            lblOutcomeTitle.setText("✓ ĐƯỢC PHÉP (ALLOWED) — Proxy Ủy Quyền Thành Công");
-            lblOutcomeTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #065F46;");
-            lblOutcomeCode.setText("200 OK");
-            lblOutcomeCode.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 2 6; -fx-background-radius: 6px;");
-            lblOutcomeMethod.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #065F46; -fx-font-family: 'JetBrains Mono', monospace;");
-            lblOutcomeRole.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #059669;");
-            lblOutcomeReason.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #047857; -fx-line-spacing: 2px;");
-            lblOutcomeBalanceState.setStyle("-fx-font-size: 11px; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-weight: 700; -fx-text-fill: #065F46;");
+            outcomePanel.setStyle("-fx-background-color: #F0FDF4; -fx-border-color: #BBF7D0; -fx-border-radius: 8px; " +
+                    "-fx-background-radius: 8px; -fx-padding: 16;");
+            lblOutcomeTitle.setText("✓ Được phép — thao tác thành công");
+            lblOutcomeTitle.setStyle("-fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: #15803D;");
+            lblOutcomeDetail.setText("Phương thức: " + methodCall + " · Vai trò: " + role.name());
+            lblOutcomeDetail.setStyle("-fx-font-size: 12px; -fx-text-fill: #166534; -fx-font-family: 'JetBrains Mono', monospace;");
+            lblOutcomeDesc.setText(reason);
+            lblOutcomeDesc.setStyle("-fx-font-size: 12px; -fx-text-fill: #166534; -fx-line-spacing: 2px;");
+            lblOutcomeBalance.setText(balanceState);
+            lblOutcomeBalance.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 800; -fx-text-fill: #0F172A; -fx-font-family: 'JetBrains Mono', monospace;");
         } else {
-            outcomePanel.getStyleClass().add("outcome-card-denied");
-            lblOutcomeTitle.setText("⛔ BỊ TỪ CHỐI (DENIED) — SecurityException");
-            lblOutcomeTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: #991B1B;");
-            lblOutcomeCode.setText("403 Forbidden");
-            lblOutcomeCode.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #DC2626; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 2 6; -fx-background-radius: 6px;");
-            lblOutcomeMethod.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #DC2626; -fx-font-family: 'JetBrains Mono', monospace;");
-            lblOutcomeRole.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: #DC2626;");
-            lblOutcomeReason.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #991B1B; -fx-line-spacing: 2px;");
-            lblOutcomeBalanceState.setStyle("-fx-font-size: 11px; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-weight: 700; -fx-text-fill: #7F1D1D;");
+            outcomePanel.setStyle("-fx-background-color: #FEF2F2; -fx-border-color: #FECACA; -fx-border-radius: 8px; " +
+                    "-fx-background-radius: 8px; -fx-padding: 16;");
+            lblOutcomeTitle.setText("✕ Bị từ chối — không đổi số dư");
+            lblOutcomeTitle.setStyle("-fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: #DC2626;");
+            lblOutcomeDetail.setText("Phương thức: " + methodCall + " · Vai trò: " + role.name());
+            lblOutcomeDetail.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569; -fx-font-family: 'JetBrains Mono', monospace;");
+            lblOutcomeDesc.setText(reason);
+            lblOutcomeDesc.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B; -fx-line-spacing: 2px;");
+            lblOutcomeBalance.setText(balanceState);
+            lblOutcomeBalance.setStyle("-fx-font-size: 12.5px; -fx-font-weight: 800; -fx-text-fill: #0F172A; -fx-font-family: 'JetBrains Mono', monospace;");
         }
-
-        lblOutcomeMethod.setText(method);
-        lblOutcomeRole.setText(role.name());
-        lblOutcomeReason.setText(reason);
-        lblOutcomeBalanceState.setText("Trạng thái số dư: " + balanceState);
     }
 
-    private VBox buildAuditConsole() {
-        VBox card = new VBox(10);
-        card.getStyleClass().add("terminal-surface");
+    private VBox buildRightColumn() {
+        VBox rightCol = new VBox(16);
 
-        HBox titleBar = new HBox(8);
-        titleBar.setAlignment(Pos.CENTER_LEFT);
-        titleBar.getStyleClass().add("terminal-title-bar");
+        // 1. Audit Log Card
+        VBox auditCard = new VBox(12);
+        auditCard.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; -fx-padding: 20px; " +
+                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0, 0, 2);");
 
-        HBox dots = new HBox(5);
-        Circle dotRed = new Circle(4.5);
-        dotRed.getStyleClass().add("terminal-dot-red");
-        Circle dotYellow = new Circle(4.5);
-        dotYellow.getStyleClass().add("terminal-dot-yellow");
-        Circle dotGreen = new Circle(4.5);
-        dotGreen.getStyleClass().add("terminal-dot-green");
-        dots.getChildren().addAll(dotRed, dotYellow, dotGreen);
+        HBox auditHeader = new HBox(10);
+        auditHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label lblFile = new Label("PROXY_AUDIT_STREAM");
-        lblFile.setStyle("-fx-text-fill: #94A3B8; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px;");
+        Label lblAuditTitle = new Label("Nhật ký truy cập");
+        lblAuditTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
 
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         Button btnClear = new Button("Xóa log");
-        btnClear.setStyle("-fx-background-color: #1E293B; -fx-text-fill: #CBD5E1; -fx-font-size: 10.5px; -fx-padding: 3 8; -fx-background-radius: 4px; -fx-cursor: hand;");
-        btnClear.setOnAction(e -> logFlow.getChildren().clear());
+        btnClear.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-size: 12px; -fx-font-weight: 600; -fx-padding: 4 12; -fx-cursor: hand;");
+        btnClear.setOnMouseEntered(e -> btnClear.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-size: 12px; -fx-font-weight: 600; -fx-padding: 4 12; -fx-cursor: hand;"));
+        btnClear.setOnMouseExited(e -> btnClear.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-text-fill: #0F172A; -fx-font-size: 12px; -fx-font-weight: 600; -fx-padding: 4 12; -fx-cursor: hand;"));
+        btnClear.setOnAction(e -> {
+            logContainer.getChildren().clear();
+            showEmptyLogPrompt();
+        });
 
-        titleBar.getChildren().addAll(dots, lblFile, sp, btnClear);
+        auditHeader.getChildren().addAll(lblAuditTitle, sp, btnClear);
 
-        Label lblSub = new Label("Nhật ký can thiệp thời gian thực của AccountProxy:");
-        lblSub.setStyle("-fx-text-fill: #64748B; -fx-font-size: 11px;");
+        Label lblAuditBadge = new Label("Audit Console");
+        lblAuditBadge.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 3 8; -fx-background-radius: 6px;");
 
-        // Log Stream Container
+        // Log container
         logScroll.setFitToWidth(true);
-        logScroll.setStyle("-fx-background: #0F172A; -fx-background-color: #0F172A; -fx-border-color: #1E293B; -fx-border-radius: 8px; -fx-background-radius: 8px;");
-        logScroll.setPrefHeight(320);
+        logScroll.setStyle("-fx-background: #FFFFFF; -fx-background-color: #FFFFFF; -fx-border-color: transparent;");
+        logScroll.setPrefHeight(150);
         VBox.setVgrow(logScroll, Priority.ALWAYS);
 
-        logFlow.setStyle("-fx-background-color: #0F172A; -fx-padding: 10;");
+        logContainer.setStyle("-fx-background-color: #FFFFFF; -fx-padding: 6 0;");
 
-        appendLog("Hệ thống kiểm soát truy cập Proxy đã kích hoạt. Sẵn sàng điều phối...", "#64748B");
+        auditCard.getChildren().addAll(auditHeader, lblAuditBadge, logScroll);
 
-        card.getChildren().addAll(titleBar, lblSub, logScroll);
-        return card;
-    }
+        // 2. Cách Proxy kiểm tra quyền Card
+        VBox howItWorksCard = new VBox(12);
+        howItWorksCard.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; -fx-padding: 20px; " +
+                "-fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.03), 8, 0, 0, 2);");
 
-    private void appendLog(String message, String colorHex) {
-        String time = LocalTime.now().format(TIME_FMT);
-        Text tTime = new Text("[" + time + "] ");
-        tTime.setStyle("-fx-fill: #64748B; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px;");
+        Label lblHowTitle = new Label("Cách Proxy kiểm tra quyền");
+        lblHowTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
 
-        Text tMsg = new Text(message + "\n");
-        tMsg.setStyle("-fx-fill: " + colorHex + "; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11px;");
-
-        logFlow.getChildren().addAll(tTime, tMsg);
-        logScroll.setVvalue(1.0);
-    }
-
-    private VBox buildArchitectureFlowCard() {
-        VBox card = new VBox(12);
-        card.getStyleClass().add("card");
-        card.setStyle("-fx-padding: 20;");
-
-        HBox titleRow = new HBox(8);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-        Label iconArch = new Label("⚙️");
-        iconArch.setStyle("-fx-font-size: 16px;");
-        Label lblTitle = new Label("Cơ chế hoạt động của Protection Proxy Pattern");
-        lblTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 800; -fx-text-fill: #0F172A;");
-        titleRow.getChildren().addAll(iconArch, lblTitle);
-
-        // Architecture Flow Diagram
-        HBox flowBar = new HBox(12);
-        flowBar.setAlignment(Pos.CENTER);
-        flowBar.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 10px; -fx-background-radius: 10px; -fx-padding: 14 20;");
-
+        // Flow diagram
+        HBox flowBar = new HBox(8);
+        flowBar.setAlignment(Pos.CENTER_LEFT);
         flowBar.getChildren().addAll(
-                buildFlowStep("1. Client / Actor", "Người dùng / Controller", "#1E293B"),
-                buildFlowArrow(),
-                buildFlowStep("2. AccountProxy", "Cổng kiểm soát an ninh", "#2563EB"),
-                buildFlowArrow(),
-                buildFlowStep("3. RBAC Guard", "Kiểm tra quyền READ/WRITE", "#D97706"),
-                buildFlowArrow(),
-                buildFlowStep("4. RealAccount", "Thực thể tài khoản thật", "#059669")
+                createFlowStep("Người dùng"),
+                createFlowArrow(),
+                createFlowStep("AccountProxy"),
+                createFlowArrow(),
+                createFlowStep("kiểm tra quyền"),
+                createFlowArrow(),
+                createFlowStep("RealAccount")
         );
 
-        // 3 Key Takeaways
-        HBox notesRow = new HBox(16);
-        notesRow.getChildren().addAll(
-                buildNoteBox("Ủy quyền & Đóng gói", "Mọi cuộc gọi nạp/rút đều phải ủy quyền qua Proxy trước khi chạm tới RealAccount."),
-                buildNoteBox("Chặn truy cập tức thì", "Vai trò READONLY bị ngắt ngay lập tức khi gọi hàm ghi, ném SecurityException và bảo toàn số dư."),
-                buildNoteBox("Minh bạch giao diện", "AccountProxy triển khai cùng interface với RealAccount, tầng gọi không cần thay đổi logic nghiệp vụ.")
+        // 3 Points
+        VBox pointsBox = new VBox(8);
+        pointsBox.getChildren().addAll(
+                createPointLabel("1. AccountProxy nhận lời gọi và vai trò mô phỏng; READONLY chỉ được xem số dư."),
+                createPointLabel("2. Khi được phép, lời gọi được chuyển tới RealAccount; nạp/rút cập nhật số dư tài khoản đã chọn."),
+                createPointLabel("3. Lỗi nghiệp vụ như số dư không đủ được hiển thị riêng, không nhầm với từ chối quyền.")
         );
 
-        card.getChildren().addAll(titleRow, flowBar, notesRow);
-        return card;
+        howItWorksCard.getChildren().addAll(lblHowTitle, flowBar, pointsBox);
+
+        rightCol.getChildren().addAll(auditCard, howItWorksCard);
+        return rightCol;
     }
 
-    private VBox buildFlowStep(String title, String sub, String colorHex) {
-        VBox step = new VBox(2);
-        step.getStyleClass().add("flow-step-box");
-        step.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12;");
-        HBox.setHgrow(step, Priority.ALWAYS);
-
-        Label lbl1 = new Label(title);
-        lbl1.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 800; -fx-text-fill: " + colorHex + ";");
-
-        Label lbl2 = new Label(sub);
-        lbl2.setStyle("-fx-font-size: 10.5px; -fx-text-fill: #64748B;");
-
-        step.getChildren().addAll(lbl1, lbl2);
-        return step;
+    private Label createFlowStep(String text) {
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; " +
+                "-fx-background-radius: 6px; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #1E293B;");
+        return lbl;
     }
 
-    private Label buildFlowArrow() {
+    private Label createFlowArrow() {
         Label arrow = new Label("➔");
-        arrow.setStyle("-fx-font-size: 16px; -fx-text-fill: #94A3B8;");
+        arrow.setStyle("-fx-font-size: 13px; -fx-text-fill: #94A3B8;");
         return arrow;
     }
 
-    private VBox buildNoteBox(String title, String desc) {
-        VBox box = new VBox(3);
-        box.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10 12;");
-        HBox.setHgrow(box, Priority.ALWAYS);
+    private Label createPointLabel(String text) {
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-font-size: 11.5px; -fx-text-fill: #475569; -fx-line-spacing: 2px;");
+        lbl.setWrapText(true);
+        return lbl;
+    }
 
-        Label lblTitle = new Label("• " + title);
-        lblTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #0F172A;");
+    private void showEmptyLogPrompt() {
+        lblEmptyLog.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-padding: 8 4;");
+        if (!logContainer.getChildren().contains(lblEmptyLog)) {
+            logContainer.getChildren().add(lblEmptyLog);
+        }
+    }
 
-        Label lblDesc = new Label(desc);
-        lblDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B; -fx-line-spacing: 2px;");
-        lblDesc.setWrapText(true);
+    private void appendLogItem(boolean allowed, String timeStr, String message) {
+        logContainer.getChildren().remove(lblEmptyLog);
 
-        box.getChildren().addAll(lblTitle, lblDesc);
-        return box;
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setStyle("-fx-padding: 4 0;");
+
+        Label icon = new Label(allowed ? "✓" : "✕");
+        icon.setStyle(allowed
+                ? "-fx-text-fill: #16A34A; -fx-font-weight: 800; -fx-font-size: 13px; -fx-min-width: 16px;"
+                : "-fx-text-fill: #DC2626; -fx-font-weight: 800; -fx-font-size: 13px; -fx-min-width: 16px;");
+
+        Label lblTime = new Label(timeStr);
+        lblTime.setStyle("-fx-text-fill: #64748B; -fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 11.5px; -fx-min-width: 60px;");
+
+        Label lblMsg = new Label(message);
+        lblMsg.setWrapText(true);
+        lblMsg.setStyle(allowed
+                ? "-fx-text-fill: #1E293B; -fx-font-size: 12px;"
+                : "-fx-text-fill: #DC2626; -fx-font-size: 12px;");
+        HBox.setHgrow(lblMsg, Priority.ALWAYS);
+
+        row.getChildren().addAll(icon, lblTime, lblMsg);
+        logContainer.getChildren().add(row);
+        logScroll.setVvalue(1.0);
     }
 
     private AccountProxy.Role getSelectedRole() {
@@ -468,7 +398,7 @@ public class ProxyDemoView extends VBox {
     private AccountProxy createProxyForSelected() {
         Account acc = cbAccount.getValue();
         if (acc == null) {
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Chưa chọn tài khoản", "Vui lòng chọn tài khoản để thử nghiệm.");
+            ToastNotification.showWarning("Vui lòng chọn tài khoản để thử nghiệm.");
             return null;
         }
         RealAccount real = new RealAccount(acc, ctx.getFacade());
@@ -479,13 +409,16 @@ public class ProxyDemoView extends VBox {
         AccountProxy proxy = createProxyForSelected();
         if (proxy == null) return;
 
+        Account acc = cbAccount.getValue();
+        String timeStr = LocalTime.now().format(TIME_FMT);
         double balance = proxy.getBalance();
-        appendLog(String.format("✔ [Proxy.getBalance] Cho phép vai trò %s xem số dư tài khoản %s: %s",
-                proxy.getRole(), proxy.getAccountNumber(), UiUtils.formatVnd(balance)), "#40E18F");
+
+        appendLogItem(true, timeStr, String.format("%s · getBalance() · Được phép. %s: %s.",
+                proxy.getRole(), proxy.getAccountNumber(), UiUtils.formatVnd(balance)));
 
         showOutcome(true, "getBalance()", proxy.getRole(),
-                "Vai trò " + proxy.getRole() + " có quyền xem số dư tài khoản qua Proxy.",
-                UiUtils.formatVnd(balance));
+                "Vai trò " + proxy.getRole() + " có quyền xem số dư tài khoản qua Protection Proxy.",
+                "Số dư hiện tại: " + UiUtils.formatVnd(balance));
     }
 
     private void testDeposit() {
@@ -494,33 +427,47 @@ public class ProxyDemoView extends VBox {
 
         Account acc = cbAccount.getValue();
         double oldBalance = acc.getBalance();
+        String timeStr = LocalTime.now().format(TIME_FMT);
+
+        double amount;
+        try {
+            String raw = txtAmount.getText().replace(",", "").replace(".", "").trim();
+            amount = Double.parseDouble(raw);
+            if (amount <= 0) throw new IllegalArgumentException("Số tiền phải lớn hơn 0.");
+        } catch (NumberFormatException e) {
+            showOutcome(false, "deposit()", proxy.getRole(),
+                    "Số tiền không hợp lệ. Vui lòng nhập số hợp lệ.",
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
+            return;
+        }
 
         try {
-            double amount = Double.parseDouble(txtAmount.getText().trim());
             proxy.deposit(amount);
             double newBalance = proxy.getBalance();
 
-            appendLog(String.format("✔ [Proxy.deposit] Cho phép vai trò %s nạp +%s vào tài khoản %s. Số dư mới: %s",
-                    proxy.getRole(), UiUtils.formatVnd(amount), proxy.getAccountNumber(), UiUtils.formatVnd(newBalance)), "#40E18F");
+            appendLogItem(true, timeStr, String.format("%s · deposit(%s) · Được phép. %s: %s.",
+                    proxy.getRole(), (long)amount, proxy.getAccountNumber(), UiUtils.formatVnd(newBalance)));
 
             ctx.notifyDataChanged();
             ToastNotification.showSuccess("Nạp thành công " + UiUtils.formatVnd(amount) + " qua Proxy!");
 
-            showOutcome(true, "deposit(" + UiUtils.formatVnd(amount) + ")", proxy.getRole(),
+            showOutcome(true, "deposit(" + (long)amount + ")", proxy.getRole(),
                     "Ủy quyền thành công qua Protection Proxy, chuyển tiếp đến RealAccount.",
-                    UiUtils.formatVnd(newBalance));
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(newBalance));
         } catch (SecurityException ex) {
-            String friendly = UiUtils.humanizeError(ex);
-            appendLog(String.format("⛔ [Proxy INTERCEPTED] TỪ CHỐI TRUY CẬP: %s", ex.getMessage()), "#EF4444");
-            ToastNotification.showError(friendly);
+            appendLogItem(false, timeStr, String.format("%s · deposit(%s) · Bị từ chối. Vai trò chỉ được xem; số dư không đổi.",
+                    proxy.getRole(), (long)amount));
+            ToastNotification.showError("Thao tác bị từ chối bởi Protection Proxy");
 
-            showOutcome(false, "deposit(" + txtAmount.getText() + " VND)", proxy.getRole(),
-                    "Vai trò READONLY chỉ được phép gọi getBalance(). Không có quyền ghi (WRITE_PERMISSION) hoặc thay đổi số dư thực tế.",
-                    "Không đổi (Giữ nguyên: " + UiUtils.formatVnd(oldBalance) + ")");
+            showOutcome(false, "deposit(" + (long)amount + ")", proxy.getRole(),
+                    "READONLY chỉ được xem số dư; thao tác nạp tiền không được chuyển tới RealAccount.",
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
         } catch (IllegalArgumentException | IllegalStateException ex) {
             String friendly = UiUtils.humanizeError(ex);
             ToastNotification.showWarning(friendly);
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", null, friendly);
+            showOutcome(false, "deposit(" + (long)amount + ")", proxy.getRole(),
+                    friendly,
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
         }
     }
 
@@ -530,42 +477,62 @@ public class ProxyDemoView extends VBox {
 
         Account acc = cbAccount.getValue();
         double oldBalance = acc.getBalance();
+        String timeStr = LocalTime.now().format(TIME_FMT);
+
+        double amount;
+        try {
+            String raw = txtAmount.getText().replace(",", "").replace(".", "").trim();
+            amount = Double.parseDouble(raw);
+            if (amount <= 0) throw new IllegalArgumentException("Số tiền phải lớn hơn 0.");
+        } catch (NumberFormatException e) {
+            showOutcome(false, "withdraw()", proxy.getRole(),
+                    "Số tiền không hợp lệ. Vui lòng nhập số hợp lệ.",
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
+            return;
+        }
 
         try {
-            double amount = Double.parseDouble(txtAmount.getText().trim());
             proxy.withdraw(amount);
             double newBalance = proxy.getBalance();
 
-            appendLog(String.format("✔ [Proxy.withdraw] Cho phép vai trò %s rút -%s từ tài khoản %s. Số dư còn: %s",
-                    proxy.getRole(), UiUtils.formatVnd(amount), proxy.getAccountNumber(), UiUtils.formatVnd(newBalance)), "#40E18F");
+            appendLogItem(true, timeStr, String.format("%s · withdraw(%s) · Được phép. %s: %s.",
+                    proxy.getRole(), (long)amount, proxy.getAccountNumber(), UiUtils.formatVnd(newBalance)));
 
             ctx.notifyDataChanged();
             ToastNotification.showSuccess("Rút thành công " + UiUtils.formatVnd(amount) + " qua Proxy!");
 
-            showOutcome(true, "withdraw(" + UiUtils.formatVnd(amount) + ")", proxy.getRole(),
+            showOutcome(true, "withdraw(" + (long)amount + ")", proxy.getRole(),
                     "Ủy quyền thành công qua Protection Proxy, chuyển tiếp đến RealAccount.",
-                    UiUtils.formatVnd(newBalance));
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(newBalance));
         } catch (SecurityException ex) {
-            String friendly = UiUtils.humanizeError(ex);
-            appendLog(String.format("⛔ [Proxy INTERCEPTED] TỪ CHỐI TRUY CẬP: %s", ex.getMessage()), "#EF4444");
-            ToastNotification.showError(friendly);
+            appendLogItem(false, timeStr, String.format("%s · withdraw(%s) · Bị từ chối. Vai trò chỉ được xem; số dư không đổi.",
+                    proxy.getRole(), (long)amount));
+            ToastNotification.showError("Thao tác bị từ chối bởi Protection Proxy");
 
-            showOutcome(false, "withdraw(" + txtAmount.getText() + " VND)", proxy.getRole(),
-                    "Vai trò READONLY chỉ được phép gọi getBalance(). Không có quyền ghi (WRITE_PERMISSION) hoặc thay đổi số dư thực tế.",
-                    "Không đổi (Giữ nguyên: " + UiUtils.formatVnd(oldBalance) + ")");
+            showOutcome(false, "withdraw(" + (long)amount + ")", proxy.getRole(),
+                    "READONLY chỉ được xem số dư; thao tác rút tiền không được chuyển tới RealAccount.",
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
         } catch (IllegalArgumentException | IllegalStateException ex) {
             String friendly = UiUtils.humanizeError(ex);
             ToastNotification.showWarning(friendly);
-            UiUtils.showAlert(Alert.AlertType.WARNING, "Cảnh báo", null, friendly);
+            showOutcome(false, "withdraw(" + (long)amount + ")", proxy.getRole(),
+                    friendly,
+                    "Trước: " + UiUtils.formatVnd(oldBalance) + " → Sau: " + UiUtils.formatVnd(oldBalance));
         }
     }
 
     public void refresh() {
         Account selected = cbAccount.getValue();
         cbAccount.setItems(ctx.getAccounts());
-        if (selected != null && ctx.getAccounts().contains(selected)) {
-            cbAccount.setValue(selected);
-        } else if (!ctx.getAccounts().isEmpty()) {
+        if (selected != null) {
+            for (Account acc : ctx.getAccounts()) {
+                if (acc.getAccountNumber().equals(selected.getAccountNumber())) {
+                    cbAccount.setValue(acc);
+                    return;
+                }
+            }
+        }
+        if (!ctx.getAccounts().isEmpty()) {
             cbAccount.setValue(ctx.getAccounts().get(0));
         }
     }
