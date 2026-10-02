@@ -1,6 +1,7 @@
 package com.banking.service;
 
 import com.banking.model.Account;
+import com.banking.model.Money;
 import com.banking.model.enums.AccountStatus;
 import com.banking.model.enums.AccountType;
 import com.banking.pattern.behavioral.*;
@@ -34,11 +35,7 @@ public class AccountService {
         String accNo = "ACC" + accountCounter.incrementAndGet();
 
         // Chọn FeeStrategy theo loại tài khoản
-        FeeStrategy feeStrategy = switch (type) {
-            case PREMIUM  -> new PremiumFeeStrategy();
-            case SAVINGS  -> new TieredFeeStrategy();
-            case STANDARD -> new StandardFeeStrategy();
-        };
+        FeeStrategy feeStrategy = strategyFor(type);
 
         // Sử dụng Builder pattern
         Account account = new Account.Builder(accNo, ownerName)
@@ -65,6 +62,42 @@ public class AccountService {
 
     public List<Account> getAllAccounts() {
         return db.getAllAccounts();
+    }
+
+    /** Đổi gói tài khoản hiện có và thay FeeStrategy khi ứng dụng đang chạy. */
+    public Account changeAccountType(String accountNumber, AccountType newType) {
+        if (newType == null) throw new IllegalArgumentException("Vui lòng chọn gói tài khoản.");
+        Account account = db.findAccount(accountNumber);
+        if (account == null) throw new IllegalArgumentException("Không tìm thấy tài khoản " + accountNumber);
+        if (account.getType() == newType) return account;
+
+        AccountType previousType = account.getType();
+        FeeStrategy previousStrategy = account.getFeeStrategy();
+        account.setType(newType);
+        account.setFeeStrategy(strategyFor(newType));
+        try {
+            db.saveAccount(account);
+        } catch (RuntimeException failure) {
+            account.setType(previousType);
+            account.setFeeStrategy(previousStrategy);
+            throw failure;
+        }
+        account.notifyObservers("Đã đổi gói sang " + newType + "; biểu phí mới: "
+                + account.getFeeStrategy().getName() + ".");
+        return account;
+    }
+
+    public double estimateFee(AccountType type, double amount) {
+        if (type == null) throw new IllegalArgumentException("Vui lòng chọn gói tài khoản.");
+        return Money.nonNegative(strategyFor(type).calculateFee(Money.positive(amount)));
+    }
+
+    private static FeeStrategy strategyFor(AccountType type) {
+        return switch (type) {
+            case PREMIUM -> new PremiumFeeStrategy();
+            case SAVINGS -> new TieredFeeStrategy();
+            case STANDARD -> new StandardFeeStrategy();
+        };
     }
 
     /**

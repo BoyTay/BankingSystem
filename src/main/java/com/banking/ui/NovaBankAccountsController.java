@@ -18,6 +18,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +64,10 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
     @FXML private Label lblDetailNumber;
     @FXML private Label lblDetailFeeStrategy;
     @FXML private Label lblDetailDailyLimit;
+    @FXML private VBox boxChangePlan;
+    @FXML private ComboBox<AccountType> cbNewPlan;
+    @FXML private Label lblPlanFeePreview;
+    @FXML private Button btnApplyPlan;
 
     // Mini Stats
     @FXML private Label lblStatCurrentBalance;
@@ -108,7 +113,10 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
         this.role = role;
         btnToggleLock.setVisible(role == AuthService.Role.ADMIN);
         btnToggleLock.setManaged(role == AuthService.Role.ADMIN);
+        boxChangePlan.setVisible(role == AuthService.Role.ADMIN);
+        boxChangePlan.setManaged(role == AuthService.Role.ADMIN);
         updateDetailsPanel();
+        updatePlanPreview();
     }
 
     public void setUser(AuthService.User user) {
@@ -129,6 +137,7 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupAccountComboBox();
+        setupPlanSelector();
         setupRecentTableColumns();
         bindAccountsFromDatabase();
 
@@ -150,6 +159,21 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
             }
         });
         cbAllAccounts.valueProperty().addListener((obs, old, current) -> selectAccount(current));
+    }
+
+    private void setupPlanSelector() {
+        cbNewPlan.setItems(FXCollections.observableArrayList(AccountType.values()));
+        cbNewPlan.setConverter(new StringConverter<>() {
+            @Override public String toString(AccountType type) {
+                if (type == null) return "Chọn gói tài khoản";
+                return switch (type) {
+                    case STANDARD -> "Tiêu chuẩn · phí 0,1%";
+                    case SAVINGS -> "Tiết kiệm · phí theo bậc";
+                    case PREMIUM -> "Đặc quyền · miễn phí";
+                };
+            }
+            @Override public AccountType fromString(String text) { return null; }
+        });
     }
 
     private void setupRecentTableColumns() {
@@ -294,6 +318,8 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
             lblCard2Balance.setText("0 VND");
             lblCard3Balance.setText("0 VND");
             btnToggleLock.setDisable(true);
+            cbNewPlan.setValue(null);
+            btnApplyPlan.setDisable(true);
             return;
         }
 
@@ -319,6 +345,8 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
         this.selectedAccount = account;
         if (account == null) return;
         if (cbAllAccounts.getValue() != account) cbAllAccounts.setValue(account);
+        cbNewPlan.setValue(account.getType());
+        updatePlanPreview();
 
         // Cập nhật Highlight Card
         cardStandard.getStyleClass().remove("account-card-selected");
@@ -420,6 +448,52 @@ public class NovaBankAccountsController implements Initializable, NovaBankNaviga
             case SAVINGS -> "100,000,000 VND / ngày";
             case PREMIUM -> "Không giới hạn hạn mức";
         };
+    }
+
+    @FXML
+    private void handlePlanSelectionChanged() {
+        updatePlanPreview();
+    }
+
+    private void updatePlanPreview() {
+        AccountType proposedType = cbNewPlan.getValue();
+        boolean canChange = selectedAccount != null && proposedType != null
+                && proposedType != selectedAccount.getType() && role == AuthService.Role.ADMIN;
+        btnApplyPlan.setDisable(!canChange);
+        if (proposedType == null) {
+            lblPlanFeePreview.setText("Chọn gói để xem phí dự kiến.");
+            return;
+        }
+        double sampleAmount = 5_000_000;
+        double currentFee = ctx.getAccountService().estimateFee(selectedAccount.getType(), sampleAmount);
+        double proposedFee = ctx.getAccountService().estimateFee(proposedType, sampleAmount);
+        lblPlanFeePreview.setText("Với giao dịch 5.000.000 VND: phí "
+                + UiUtils.formatVnd(currentFee) + " → " + UiUtils.formatVnd(proposedFee) + ".");
+    }
+
+    @FXML
+    private void handleApplyPlan() {
+        if (role != AuthService.Role.ADMIN || selectedAccount == null || cbNewPlan.getValue() == null) return;
+        AccountType newType = cbNewPlan.getValue();
+        if (newType == selectedAccount.getType()) return;
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Đổi gói tài khoản");
+        confirmation.setHeaderText("Đổi gói cho " + selectedAccount.getAccountNumber() + "?");
+        confirmation.setContentText("Gói mới: " + cbNewPlan.getConverter().toString(newType)
+                + ". Biểu phí mới áp dụng cho các giao dịch tiếp theo.");
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+
+        try {
+            String accountNumber = selectedAccount.getAccountNumber();
+            ctx.getAccountService().changeAccountType(accountNumber, newType);
+            ctx.notifyDataChanged();
+            bindAccountsFromDatabase();
+            ToastNotification.showSuccess("Đã đổi gói cho " + accountNumber + ". Biểu phí đã cập nhật.");
+        } catch (RuntimeException failure) {
+            ToastNotification.showError(UiUtils.humanizeError(failure));
+            cbNewPlan.setValue(selectedAccount.getType());
+        }
     }
 
     private void refreshDisplay() {

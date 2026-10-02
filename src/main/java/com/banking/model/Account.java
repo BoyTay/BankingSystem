@@ -58,7 +58,8 @@ public class Account {
     public AccountState getState()   { return state; }
 
     public void setBalance(double balance)           { this.balance = Money.of(Money.nonNegative(balance)); }
-    public void setFeeStrategy(FeeStrategy strategy) { this.feeStrategy = strategy; }
+    public void setType(AccountType type)             { this.type = java.util.Objects.requireNonNull(type); }
+    public void setFeeStrategy(FeeStrategy strategy) { this.feeStrategy = java.util.Objects.requireNonNull(strategy); }
 
     public void setState(AccountState state) {
         if (state instanceof ActiveState) {

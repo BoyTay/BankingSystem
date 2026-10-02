@@ -226,6 +226,15 @@
                             <Button text="⤓ Xuất sao kê tài khoản (CSV)" styleClass="btn-export-header" maxWidth="Infinity" onAction="#handleDownloadStatement"/>
                         </VBox>
 
+                        <!-- Đổi gói cho tài khoản hiện có; phí mẫu được tính trước khi lưu. -->
+                        <VBox fx:id="boxChangePlan" styleClass="card" spacing="10.0">
+                            <Label text="Đổi gói tài khoản" styleClass="card-title"/>
+                            <Label text="Biểu phí mới áp dụng cho các giao dịch tiếp theo." styleClass="card-hint" wrapText="true"/>
+                            <ComboBox fx:id="cbNewPlan" maxWidth="Infinity" onAction="#handlePlanSelectionChanged"/>
+                            <Label fx:id="lblPlanFeePreview" text="Phí dự kiến cho giao dịch 5.000.000 VND: —" styleClass="card-hint" wrapText="true"/>
+                            <Button fx:id="btnApplyPlan" text="Lưu thay đổi gói" styleClass="btn-export-header" maxWidth="Infinity" onAction="#handleApplyPlan"/>
+                        </VBox>
+
                         <!-- Security & State Pattern Card (Lock / Unlock Card) -->
                         <VBox styleClass="security-lock-dark-card" spacing="12.0">
                             <HBox alignment="CENTER_LEFT" spacing="12.0">

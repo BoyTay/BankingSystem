@@ -13,6 +13,7 @@ import com.banking.pattern.behavioral.PremiumFeeStrategy;
 import com.banking.pattern.behavioral.TieredFeeStrategy;
 import com.banking.pattern.creational.DatabaseManager;
 import com.banking.pattern.creational.TransferTemplate;
+import com.banking.persistence.SqliteStore;
 import com.banking.pattern.structural.AccountProxy;
 import com.banking.pattern.structural.BankingFacade;
 import com.banking.pattern.structural.RealAccount;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -199,6 +201,29 @@ class BankingFlowTest {
         assertEquals(1_000, new TieredFeeStrategy().calculateFee(1_000_000));
         assertEquals(500, new TieredFeeStrategy().calculateFee(1_000_001), 0.001);
         assertSame(DatabaseManager.getInstance(), DatabaseManager.getInstance());
+    }
+
+    @Test
+    void changingExistingAccountPlanSwapsStrategyAndPersistsIt() {
+        String number = source.getAccountNumber();
+        assertEquals(5_000, accounts.estimateFee(AccountType.STANDARD, 5_000_000));
+
+        Account changed = accounts.changeAccountType(number, AccountType.PREMIUM);
+        assertSame(source, changed);
+        assertEquals(AccountType.PREMIUM, source.getType());
+        assertInstanceOf(PremiumFeeStrategy.class, source.getFeeStrategy());
+        assertEquals(0, facade.transfer(number, target.getAccountNumber(), 1_000, "Sau đổi gói").getFee());
+
+        Path dbFile = Path.of(System.getProperty("banking.data.file"));
+        Account reloaded = new SqliteStore(dbFile).loadAccounts().stream()
+                .filter(account -> account.getAccountNumber().equals(number)).findFirst().orElseThrow();
+        assertEquals(AccountType.PREMIUM, reloaded.getType());
+        assertInstanceOf(PremiumFeeStrategy.class, reloaded.getFeeStrategy());
+
+        accounts.changeAccountType(number, AccountType.SAVINGS);
+        assertInstanceOf(TieredFeeStrategy.class, source.getFeeStrategy());
+        assertEquals(2_500, accounts.estimateFee(AccountType.SAVINGS, 5_000_000));
+        assertEquals(1, facade.transfer(number, target.getAccountNumber(), 1_000, "Gói tiết kiệm").getFee());
     }
 
     @Test
